@@ -148,65 +148,7 @@ try:
         input("\nPress enter to reboot...")
         run("reboot")
     else:
-        name = input("What should this client be named? ")
-        run(["mkdir", "/etc/wireguard/clients/" + name])
-        subnet = str(len(listdir("/etc/wireguard/clients")) + 1)
-        print("\nGenerating keys")
-        sleep(2)
-        run("wg genkey | tee /etc/wireguard/clients/" + name + "/" + name + ".key | wg pubkey > /etc/wireguard/clients/" + name + "/" + name + ".pub", shell=True)
-        ppri = str(check_output(["cat", "/etc/wireguard/clients/" + name + "/" + name + ".key"]))[2:-3]
-        ppub = str(check_output(["cat", "/etc/wireguard/clients/" + name + "/" + name + ".pub"]))[2:-3]
-        spub = str(check_output(["cat", "/etc/wireguard/server.pub"]))[2:-3]
-
-        print("\nWriting to file")
-        sleep(2)
-
-        with open("/etc/wireguard/wg0.conf", "a+") as wg0, open("/etc/wireguard/clients/" + name + "/" + name + ".conf", "w") as peer:
-            wg0.write("\n[Peer]\n")
-            wg0.write("PublicKey = " + ppub + "\n")
-            wg0.write("AllowedIPs = 10.9.0." + subnet + "/32\n")
-            wg0.seek(0)
-            for i, line in enumerate(wg0):
-                if i == 2:
-                    port = line[13:]
-                elif i == 3:
-                    dns = line[6:]
-                elif i > 3:
-                    break
-            peer.write("[Interface]\n")
-            peer.write("Address = 10.9.0." + subnet + "/32, fd08:4711::" + subnet + "/128\n")
-            peer.write("DNS = " + dns + "\n")
-            peer.write("PrivateKey = " + ppri + "\n")
-            peer.write("\n[Peer]\n")
-            peer.write("PublicKey = " + spub + "\n")
-            ip = str(check_output(["curl", "https://checkip.amazonaws.com/"]))[2:-3]
-            ipuse = input("What would you like to use to connect to this VPN (e.g. Public IP, DDNS) (Default: " + ip + ") ")
-            if ipuse == '':
-                ipuse = ip
-            peer.write("Endpoint = " + ipuse + ":" + port + "\n")
-            peer.write("AllowedIPs = 0.0.0.0/0, ::/0\n")
-            pka = input("Will this device be behind a NAT? [N/y]: ")
-            if 'y' in pka:
-                peer.write("PersistentkeepAlive = 60")
-            psk = input("Would you like to use a pre-shared key? (Recommended) [Y/n]: ")
-            if not 'n' in psk:
-                run("wg genpsk > /etc/wireguard/clients/" + name + "/" + name + ".psk", shell=True)
-                psk = str(check_output(["cat", "/etc/wireguard/clients/" + name + "/" + name + ".psk"]))[2:-3]
-                wg0.write("PresharedKey = " + psk + "\n")
-                peer.write("PresharedKey = " + psk + "\n")
-
-        print("Peer has been configured.")
-        print("To see how to install the VPN on devices, please see the guide at https://www.wireguard.com/install")
-        useqr = input("Would you like to generate a QR code to scan? [Y/n]: ")
-        if not 'n' in useqr.lower():
-            with open("/etc/wireguard/clients/" + name + "/" + name + ".conf") as peer:
-                lines = peer.read().splitlines()
-                qr = QRCode()
-                qr.add_data(linesep.join(lines))
-                qr.print_ascii()
-
-        input("Press enter to reboot...")
-        run("reboot")
+        print("запусти скрипт sudo python3 gen_clients.py")
 
 except KeyboardInterrupt or EOFError:
     print('')
