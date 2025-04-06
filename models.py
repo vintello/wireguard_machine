@@ -28,6 +28,11 @@ class IPList(SQLModel, table=True):
                                                     )
                                    )
 
+class UserConfigs(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    user_num: int
+    file_name: str
+
 
 class SecurityConfig(BaseModel):
     """

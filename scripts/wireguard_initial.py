@@ -5,41 +5,61 @@ from subprocess import check_output, run
 from time import sleep
 from os.path import exists
 from os import listdir, linesep
-try:
+import sqlite3
 
+def mess_window(mess, type_mess="error"):
+    print("\n\n")
+    total_len = 100
+    if type_mess == "error":
+        head_mess = "О Ш И Б К А"
+    elif type_mess == "warning":
+        head_mess = "В Н И М А Н И Е"
+    print("=" * 40 + head_mess + "=" * (total_len-40-len(head_mess)))
+    print(f"{mess}")
+    print("=" * 100)
+    print("\n\n")
+try:
+    # проверяем наличие базы данных
+    if not exists("../database.db"):
+        mess_window("Не найдена база данных. Необходимо в первую очередь запустить проект", )
+        exit()
     if not "root" in str(check_output("whoami")):
-        print("This script needs to be run as root to work, please prefix with 'sudo'.")
+        mess_window("Этот скрипт нужно запускать от имени администратора (root), используй 'sudo'.")
         exit()
 
     try:
         from qrcode import QRCode
     except ModuleNotFoundError:
-        print("Installing required qrcode module")
+        print("Инсталируем qrcode module")
         sleep(2)
         run(["apt", "install", "python3-qrcode"])
 
     if exists("/etc/wireguard") and not exists("/etc/wireguard/run-script-to-add-more-clients") and not exists("/etc/wireguard/run-script-to-configure"):
-        print("It seems that WireGuard has already been installed")
-        print("This will delete your existing configuration and your clients will not work anymore")
-        print("It is being assumed that WireGuard was working before")
-        print("If this is not the case, please press ^C and run 'sudo rm -rf /etc/wireguard'")
-        input("Press enter to continue...")
+        mess = '''
+        Похоже WireGuard уже установлен
+        Это приведет к удалению вашей текущей конфигурации, и ваши клиенты больше не будут работать.
+        Предполагается, что WireGuard работал и раньше.
+        Если это так, нажмите ^C чтобы остановить работу.
+        Если не так, то нажмите Enter чтобы удалить конфигурации в автоматическом режиме
+        '''
+        mess_window(mess, "warning")
+        input("Нажмите Enter, чтобы продолжить...")
         run(["rm", "-r", "/etc/wireguard/"])
         run(["mkdir", "/etc/wireguard/"])
         run(["touch", "/etc/wireguard/run-script-to-configure"])
 
     if not exists("/etc/wireguard"):
 
-        print("\nUpdating\n")
+        print("\nОбновление системы\n")
         sleep(2)
         run(["apt", "update"])
         run(["apt", "upgrade"])
 
-        print("\nInstalling dependencies\n")
+        print("\nУстановка зависимостей\n")
         sleep(2)
-        run(["apt", "install", "raspberrypi-kernel-headers", "libelf-dev", "pkg-config", "build-essential", "git", "dirmngr"])
+        run(["apt", "install", "curl", "libelf-dev", "pkg-config", "build-essential", "git", "dirmngr", "wireguard", "openresolv"])
 
-        print("\nDownloading WireGuard and WireGuard tools\n")
+        """print("\nDownloading WireGuard and WireGuard tools\n")
         sleep(2)
         run(["git", "clone", "https://git.zx2c4.com/wireguard-linux-compat"])
         run(["git", "clone", "https://git.zx2c4.com/wireguard-tools"])
@@ -61,15 +81,15 @@ try:
         ipv6 = input("\nWould you like to use IPv6? (If you don't know what this is, say no) [N/y]: ")
 
         print("\nEnabling IP forwarding\n")
-        sleep(2)
+        sleep(2)"""
 
         run("perl -pi -e 's/#{1,}?net.ipv4.ip_forward ?= ?(0|1)/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf", shell=True)
-        if 'y' in ipv6.lower():
-            run("perl -pi -e 's/#{1,}?net.ipv6.conf.all.forwarding ?= ?(0|1)/net.ipv6.conf.all.forwarding = 1/g' /etc/sysctl.conf", shell=True)
+        #if 'y' in ipv6.lower():
+        #    run("perl -pi -e 's/#{1,}?net.ipv6.conf.all.forwarding ?= ?(0|1)/net.ipv6.conf.all.forwarding = 1/g' /etc/sysctl.conf", shell=True)
 
         run(["touch", "/etc/wireguard/run-script-to-configure"])
 
-        print("\nWireGuard has been installed")
+        print("\nWireGuard был установлен")
         print("THIS SCRIPT WILL NEED TO BE RUN AGAIN TO FINISH CONFIGURING WIREGUARD")
 
         input("\nPress enter to reboot...")
@@ -123,9 +143,7 @@ try:
         run(["mkdir", "/etc/wireguard/clients"])
         run(["touch", "/etc/wireguard/run-script-to-add-more-clients"])
 
-        print("\nServer configuration complete.  Run the script again to add clients")
-        print("Please forward port " + port + " on your router.")
-        print("For instructions, visit https://portforward.com/router.htm")
+        print("\nКонфигурация сервера завершена")
 
         input("\nPress enter to reboot...")
         run("reboot")
