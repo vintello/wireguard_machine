@@ -6,13 +6,15 @@ import bcrypt
 import os
 from sqlmodel import Field, Session, SQLModel, create_engine, select, column
 from typing import Annotated
+import configparser
 
-from fastapi import Depends, FastAPI, HTTPException, status, Request
+from fastapi import Depends, FastAPI, HTTPException, status, Request, BackgroundTasks
+from fastapi.responses import RedirectResponse, FileResponse, Response
 from models import SecurityConfig
 from handlers.midleware import SecurityMiddleware
 from models import Type_IP_List, IPList
 from schemas import IP_List_Response, IP_List_Query, IP_List_Update, List_IP_List_Update, List_IP_List_Update_response
-
+from schemas import ListClients, Client, ListClientsWithTotal
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -48,12 +50,30 @@ def get_ip_list(type_ip:Type_IP_List):
 
 
 SessionDep = Annotated[Session, Depends(get_session)]
+description = """
+работа с конфигами клиентов для Wireguard сервера. 🚀
+
+## work
+
+сервисные точки 
+
+## access
+
+Управление настройками доступа к серверу.
+
+`Внимание` если ни один IP не прописан то доступ разрешен всем
+
+###### При потере доступа к сервису необходимо зайти в папку проекта найти файл database.db, -это sqlite база данных и туда внести в ручном режиме необходимый IP с типом whitelist 
+
+
+## wireguard
+
+работа с конфигами wireguard
+"""
 
 app = FastAPI(
     title="Wireguard Manager",
-    description="""
-работа с конфигами клиентов для Wireguard сервера
-""",
+    description=description,
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -66,13 +86,13 @@ config = SecurityConfig(
     whitelist=app.state.whitelist_list,#get_ip_list(Type_IP_List.whitelist),#["0.0.0.0", "0.0.0.0/0"],
     blacklist=[],#"192.168.0.1/32", "10.0.0.100/32"],
     # Rate Limiting
-    rate_limit=30,
-    rate_limit_window=60,
+    rate_limit=1000,
+    rate_limit_window=1000,
     # Auto-ban Configuration
     enable_ip_banning=True,
     enable_penetration_detection=True,
-    auto_ban_threshold=30,
-    auto_ban_duration=60,
+    auto_ban_threshold=1000,
+    auto_ban_duration=1000,
     # Excluded Paths
     exclude_paths=[
         #"/docs",
@@ -95,12 +115,44 @@ config = SecurityConfig(
 app.add_middleware(SecurityMiddleware, config=config)
 
 
+@app.get("/", include_in_schema=False)
+def index():
+    return RedirectResponse("/docs")
 
-@app.get("/get-wire")
-async def get_wire(request: Request):
-    return [{"item_id": "Foo", "owner": "current_user.username"}]
+@app.get("/get-wire",
+         tags=["work"],
+         description="""Возвращает свободный конфиг и маркирует его как выданный. при следующем запросе выдаст новый
+         
+         пример получения :
+         
+             $ wget -O client.conf http://<domain>/get-wire 
+         
+         """,
+         name="Получить свободный конфиг"
+         )
+async def get_wire(response: Response):
+    file_ = None
+    data = clients_scan()
+    for row in data.clients:
+        if not row.used:
+            file_ = row.cfg_file
+            break
+    if file_:
+        folder_ = os.path.dirname(file_)
+        file_path = os.path.join(folder_, "blocked.lock")
+        with open(file_path, 'a'):
+            os.utime(file_path, None)
+        return FileResponse(path=file_, filename='config.conf')#, media_type='multipart/form-data')
+    else:
+        response.status_code = 400
+        return {"message": "no_serts_available"}
 
-@app.get("/whitelist", response_model=list[IP_List_Response], tags=["access"])
+@app.get("/whitelist",
+         response_model=list[IP_List_Response],
+         tags=["access"],
+         description="Полный список всех разрешенных IP для доступа к сервису.",
+         name="Получить список IP адресов и их Id"
+         )
 async def list_whitelist(params: IP_List_Query = Depends()):
     with Session(engine) as session:
         statement = select(IPList).where(IPList.type_rec == Type_IP_List.whitelist)
@@ -112,7 +164,12 @@ async def list_whitelist(params: IP_List_Query = Depends()):
         heroes = session.exec(statement).all()
         return heroes
 
-@app.post("/whitelist", response_model=List_IP_List_Update_response, tags=["access"])
+@app.post("/whitelist",
+          response_model=List_IP_List_Update_response,
+          tags=["access"],
+          description="на вход можно загрузить список IP адресов для добавления.",
+          name="Добавление IP адресов"
+)
 def post_whitelist(params: List_IP_List_Update = Depends()):
     with Session(engine) as session:
         result = []
@@ -136,7 +193,13 @@ def post_whitelist(params: List_IP_List_Update = Depends()):
             config.whitelist.append(row.ip_addr)
     return resp
 
-@app.patch("/whitelist/{id}", response_model=IP_List_Update, tags=["access"])
+@app.patch("/whitelist/{id}",
+           response_model=IP_List_Update,
+           tags=["access"],
+           description="на вход нужно подать id, который можно взять в пункте /whitelist.",
+           name="Обновление IP"
+
+           )
 def update_whitelist(id: int, while_ip: IP_List_Update):
     with Session(engine) as session:
         rec = session.get(IPList, id)
@@ -151,7 +214,11 @@ def update_whitelist(id: int, while_ip: IP_List_Update):
         config.whitelist.append(rec.ip_addr)
     return rec
 
-@app.delete("/whitelist/{id}", tags=["access"])
+@app.delete("/whitelist/{id}",
+            tags=["access"],
+            description="на вход нужно подать id, который можно взять в пункте /whitelist",
+            name="Удаление разрешения на доступ для IP"
+            )
 def delete_from_whitelist(id: int):
     with Session(engine) as session:
         rec = session.get(IPList, id)
@@ -161,6 +228,58 @@ def delete_from_whitelist(id: int):
         session.commit()
         config.whitelist.remove(rec.ip_addr)
     return {"status": "success"}
+
+@app.get("/list_cfg/",
+         response_model=ListClients,
+         tags=["wireguard"],
+         description="Отображает все конфигурационные файлы, которые зарегистрированы на сервере а также их статус",
+         name="Просмотр конфигов на сервере"
+         )
+def scan_wireguard_user_configs(background_tasks: BackgroundTasks):
+    data = clients_scan()
+    return data
+
+@app.get("/statistic/",
+         response_model=ListClientsWithTotal,
+         tags=["wireguard"],
+         description="Отображает сводку по занятым и свободным конфигам в количественном выражении",
+         name="Просмотр краткой сводки по конфигам"
+)
+def free_for_use_wireguard_user_configs(background_tasks: BackgroundTasks):
+    selected_clients = ListClientsWithTotal()
+    data = clients_scan()
+    selected_clients.total = len(data.clients)
+    used_ = 0
+    free_ = 0
+    for row in data.clients:
+        if not row.used:
+            #selected_clients.clients.append(row)
+            free_ +=1
+        else:
+            used_+=1
+    selected_clients.used = used_
+    selected_clients.free = free_
+    return selected_clients
+
+def clients_scan(directory = "/etc/wireguard/clients"):
+    list_clients = ListClients()
+    tree = list(os.walk(directory))
+    for row in tree:
+        if row[0] == directory:
+            pass
+        else:
+            subdirname = row[0].split("/")[-1]
+            client = Client(name=subdirname)
+            files_list = [os.path.splitext(file_) for file_ in row[2]]
+            for file_ in files_list:
+                if ".conf" in file_[1]:
+                    client.cfg_file = os.path.join(row[0], file_[0]+file_[1])
+                if ".lock" in file_[1]:
+                    client.used = True
+            list_clients.clients.append(client)
+
+
+    return list_clients
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000)#, ssl_keyfile="path/to/key.pem", ssl_certfile="path/to/cert.pem")

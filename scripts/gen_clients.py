@@ -3,9 +3,7 @@
 
 from subprocess import check_output, run
 from time import sleep
-from os.path import exists
 from os import listdir, linesep, path
-import sqlite3
 import qrcode
 
 def mess_window(mess, type_mess="error"):
@@ -24,7 +22,8 @@ def main(number_clients, cfg_folder):
     try:
         clc_clients = len(listdir(path.join(cfg_folder, "clients"))) +1
         spub = str(check_output(["cat", path.join(cfg_folder,"server.pub")]))[2:-3]
-        for numb in range(clc_clients, clc_clients + number_clients +1):
+        ip = str(check_output(["curl", "https://checkip.amazonaws.com/"]))[2:-3]
+        for numb in range(clc_clients, clc_clients + number_clients):
             print(f"Клиент № {numb-clc_clients+1} из {number_clients}")
             client_name = f"client_{numb}"
             client_folder = path.join(cfg_folder, "clients", client_name)
@@ -36,7 +35,7 @@ def main(number_clients, cfg_folder):
             ppri = str(check_output(["cat", f"{client_folder}/{client_name}.key"]))[2:-3]
             ppub = str(check_output(["cat", f"{client_folder}/{client_name}.pub"]))[2:-3]
 
-            print("\nWriting to file")
+            print("\n")
             sleep(2)
 
             with open(path.join(cfg_folder,"wg0.conf"), "a+") as wg0, open(path.join(client_folder,f"{client_name}.conf"), "w") as peer:
@@ -59,28 +58,23 @@ def main(number_clients, cfg_folder):
                 peer.write("\n[Peer]\n")
                 peer.write("PublicKey = " + spub + "\n")
 
-                ip = str(check_output(["curl", "https://checkip.amazonaws.com/"]))[2:-3]
-                #ipuse = input("What would you like to use to connect to this VPN (e.g. Public IP, DDNS) (Default: " + ip + ") ")
-                #if ipuse == '':
+
                 ipuse = ip
                 peer.write("Endpoint = " + ipuse + ":" + port + "\n")
                 peer.write("AllowedIPs = 0.0.0.0/0, ::/0\n")
                 peer.write("PersistentkeepAlive = 20")
 
-                run("wg genpsk > /etc/wireguard/clients/" + name + "/" + name + ".psk", shell=True)
-                psk = str(check_output(["cat", "/etc/wireguard/clients/" + name + "/" + name + ".psk"]))[2:-3]
-                wg0.write("PresharedKey = " + psk + "\n")
-                peer.write("PresharedKey = " + psk + "\n")
+                run(f"wg genpsk > {client_folder}/{client_name}.psk", shell=True)
+                psk = str(check_output(["cat", f"{client_folder}/{client_name}.psk"]))[2:-3]
+                wg0.write("\nPresharedKey = " + psk + "\n")
+                peer.write("\nPresharedKey = " + psk + "\n")
 
-            print("Peer has been configured.")
-            print("To see how to install the VPN on devices, please see the guide at https://www.wireguard.com/install")
-            useqr = input("Would you like to generate a QR code to scan? [Y/n]: ")
-            if not 'n' in useqr.lower():
-                with open("/etc/wireguard/clients/" + name + "/" + name + ".conf") as peer:
-                    lines = peer.read().splitlines()
-                    qr = qrcode.QRCode()
-                    qr.add_data(linesep.join(lines))
-                    qr.print_ascii()
+            with open(f"{client_folder}/{client_name}.conf") as peer:
+                lines = peer.read().splitlines()
+                qr = qrcode.QRCode()
+                qr.add_data(linesep.join(lines))
+                img = qr.make_image(fill_color=(75, 0, 75), back_color=(190, 190, 255))
+                img.save(f"{client_folder}/{client_name}.png")
 
         input("Press enter to reboot...")
         run("reboot")
