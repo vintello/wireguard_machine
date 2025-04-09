@@ -18,25 +18,31 @@ def mess_window(mess, type_mess="error"):
     print("=" * 100)
     print("\n\n")
 
+def get_file_source(file_name):
+    source_txt = None
+    with open(file_name, "r") as f:
+        source_txt = f.read()
+    return  source_txt
+
 def main(number_clients, cfg_folder):
     try:
-        clc_clients = len(listdir(path.join(cfg_folder, "clients"))) +1
-        spub = str(check_output(["cat", path.join(cfg_folder,"server.pub")]))[2:-3]
+        clc_clients = len(listdir(path.join(cfg_folder, "clients")))
+        serv_pub_1 = get_file_source(path.join(cfg_folder,"server.pub"))
+        serv_pub = str(check_output(["cat", path.join(cfg_folder,"server.pub")]))[2:-3]
+        print(serv_pub_1 == serv_pub)
         ip = str(check_output(["curl", "https://checkip.amazonaws.com/"]))[2:-3]
         for numb in range(clc_clients, clc_clients + number_clients):
             print(f"Клиент № {numb-clc_clients+1} из {number_clients}")
             client_name = f"client_{numb}"
             client_folder = path.join(cfg_folder, "clients", client_name)
-            run(["mkdir", client_folder])#"f"/etc/wireguard/clients/{numb}"])
+            run(["mkdir", client_folder])
             subnet = str(len(listdir(client_folder)) + 1)
             print("\n    Генерация ключей")
-            sleep(2)
             run(f"wg genkey | tee {client_folder}/{client_name}.key | wg pubkey > {client_folder}/{client_name}.pub", shell=True)
             ppri = str(check_output(["cat", f"{client_folder}/{client_name}.key"]))[2:-3]
             ppub = str(check_output(["cat", f"{client_folder}/{client_name}.pub"]))[2:-3]
 
             print("\n")
-            sleep(2)
 
             with open(path.join(cfg_folder,"wg0.conf"), "a+") as wg0, open(path.join(client_folder,f"{client_name}.conf"), "w") as peer:
                 wg0.write("\n[Peer]\n")
@@ -69,12 +75,12 @@ def main(number_clients, cfg_folder):
                 wg0.write("\nPresharedKey = " + psk + "\n")
                 peer.write("\nPresharedKey = " + psk + "\n")
 
-            with open(f"{client_folder}/{client_name}.conf") as peer:
+            """with open(f"{client_folder}/{client_name}.conf") as peer:
                 lines = peer.read().splitlines()
                 qr = qrcode.QRCode()
                 qr.add_data(linesep.join(lines))
                 img = qr.make_image(fill_color=(75, 0, 75), back_color=(190, 190, 255))
-                img.save(f"{client_folder}/{client_name}.png")
+                img.save(f"{client_folder}/{client_name}.png")"""
 
         input("Press enter to reboot...")
         run("reboot")

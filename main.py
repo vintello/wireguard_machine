@@ -139,7 +139,7 @@ async def get_wire(response: Response):
             break
     if file_:
         folder_ = os.path.dirname(file_)
-        file_path = os.path.join(folder_, "blocked.lock")
+        file_path = os.path.join(folder_, "used.lock")
         with open(file_path, 'a'):
             os.utime(file_path, None)
         return FileResponse(path=file_, filename='config.conf')#, media_type='multipart/form-data')
