@@ -4,25 +4,9 @@
 from subprocess import check_output, run
 from time import sleep
 from os import listdir, linesep, path
-import qrcode
+from utils import get_file_source, mess_window
 
-def mess_window(mess, type_mess="error"):
-    print("\n\n")
-    total_len = 100
-    if type_mess == "error":
-        head_mess = "О Ш И Б К А"
-    elif type_mess == "warning":
-        head_mess = "В Н И М А Н И Е"
-    print("=" * 40 + head_mess + "=" * (total_len-40-len(head_mess)))
-    print(f"{mess}")
-    print("=" * 100)
-    print("\n\n")
 
-def get_file_source(file_name):
-    source_txt = None
-    with open(file_name, "r") as f:
-        source_txt = f.read()
-    return  source_txt
 
 def main(number_clients, cfg_folder):
     try:
