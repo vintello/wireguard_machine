@@ -1,18 +1,15 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 from subprocess import check_output, run
 from os import listdir, path
 from server.utils import get_file_source
 
-
-def main(number_clients, cfg_folder):
+def gen_users(number_clients, cfg_folder, logger):
     try:
         clc_clients = len(listdir(path.join(cfg_folder, "clients")))
         serv_pub_1 = get_file_source(path.join(cfg_folder,"server.pub"))
         serv_pub = str(check_output(["cat", path.join(cfg_folder,"server.pub")]))[2:-3]
-        print(serv_pub_1 == serv_pub)
+        logger.info(serv_pub_1 == serv_pub)
         ip = str(check_output(["curl", "https://checkip.amazonaws.com/"]))[2:-3]
+        1/0
         for numb in range(clc_clients, clc_clients + number_clients):
             print(f"Клиент № {numb-clc_clients+1} из {number_clients}")
             client_name = f"client_{numb}"
@@ -69,18 +66,3 @@ def main(number_clients, cfg_folder):
     except KeyboardInterrupt or EOFError:
         print('')
         exit()
-
-if __name__ == "__main__":
-    from argparse import ArgumentParser
-
-    parser = ArgumentParser()
-    parser.add_argument("-n", "--client_numbers",
-                        dest="n", default=300, type=int,
-                        help="количество клиентов для генерации")
-    parser.add_argument("-cf", "--config_folder",
-                        dest="cf", default="/etc/wireguard",
-                        help="папка с конфигурациями. отсылка к файлу wg0.conf Клиентские конфиги в папке /clients/*")
-
-    args = parser.parse_args()
-    main(args.n, args.cf)
-    print(args)

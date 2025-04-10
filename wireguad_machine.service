@@ -4,10 +4,10 @@ After=network.target[Service]
 
 [Service]
 Type=forking
-PIDFile=/work/www/myunit/shared/tmp/pids/service.pid
+PIDFile=<PATH TO PROJECT>/service.pid
 Type=simple
-WorkingDirectory=/home/vintello/PycharmProjects/wireguard_machine
-ExecStart=/home/vintello/PycharmProjects/wireguard_machine/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8080
+WorkingDirectory=<PATH TO PROJECT>/wireguard_machine
+ExecStart=<PATH TO PROJECT>/wireguard_machine/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8080
 Restart=always[Install]
 
 [Install]

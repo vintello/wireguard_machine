@@ -6,13 +6,9 @@ from typing import Any
 
 from fastapi import Request
 
-'''from guard.handlers.cloud_handler import cloud_handler
-from guard.handlers.ipinfo_handler import IPInfoManager
-from guard.models import SecurityConfig
-from guard.sus_patterns import SusPatterns'''
-from models import SecurityConfig
-from handlers.ipinfo_handler import IPInfoManager
-from handlers.sus_patterns import SusPatterns
+from server.models import SecurityConfig
+from server.handlers.ipinfo_handler import IPInfoManager
+from server.handlers.sus_patterns import SusPatterns
 
 async def setup_custom_logging(log_file: str) -> logging.Logger:
     """
@@ -347,4 +343,4 @@ def get_file_source(file_name):
     source_txt = None
     with open(file_name, "r") as f:
         source_txt = f.read()
-    return  source_txt
+    return source_txt.strip()

@@ -9,23 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-'''from guard.handlers.cloud_handler import cloud_handler
-from guard.handlers.ipban_handler import ip_ban_manager
-from guard.handlers.ipinfo_handler import IPInfoManager
-from guard.models import SecurityConfig
-from guard.sus_patterns import SusPatterns
-from guard.utils import (
-    detect_penetration_attempt,
-    is_ip_allowed,
-    is_user_agent_allowed,
-    log_request,
-    log_suspicious_activity,
-    setup_custom_logging,
-)'''
-from models import SecurityConfig
-from handlers.ipinfo_handler import IPInfoManager
-from handlers.ipban_handler import ip_ban_manager
-from utils import (
+from server.models import SecurityConfig
+from server.handlers.ipinfo_handler import IPInfoManager
+from server.handlers.ipban_handler import ip_ban_manager
+from server.utils import (
     detect_penetration_attempt,
     is_ip_allowed,
     is_user_agent_allowed,
@@ -77,9 +64,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     async def setup_logger(self) -> None:
         self.logger = await setup_custom_logging("security.log")
 
-    async def dispatch(
-        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         """
         Dispatch method to handle incoming
         requests and apply security measures.
@@ -113,7 +98,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             .split(",")[0]
             .strip()
         )
-
+        print(client_ip)
         # Excluded paths
         if any(request.url.path.startswith(path) for path in self.config.exclude_paths):
             return await call_next(request)

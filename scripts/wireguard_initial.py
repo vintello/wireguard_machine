@@ -4,8 +4,7 @@
 from subprocess import check_output, run
 from time import sleep
 from os.path import exists
-from os import listdir, linesep
-import sqlite3
+
 
 def mess_window(mess, type_mess="error"):
     print("\n\n")
@@ -18,6 +17,8 @@ def mess_window(mess, type_mess="error"):
     print(f"{mess}")
     print("=" * 100)
     print("\n\n")
+
+
 try:
     # проверяем наличие базы данных
     if not exists("../database.db"):
@@ -27,12 +28,6 @@ try:
         mess_window("Этот скрипт нужно запускать от имени администратора (root), используй 'sudo'.")
         exit()
 
-    try:
-        from qrcode import QRCode
-    except ModuleNotFoundError:
-        print("Инсталируем qrcode module")
-        sleep(2)
-        run(["apt", "install", "python3-qrcode"])
 
     if exists("/etc/wireguard") and not exists("/etc/wireguard/run-script-to-add-more-clients") and not exists("/etc/wireguard/run-script-to-configure"):
         mess = '''
@@ -59,30 +54,6 @@ try:
         sleep(2)
         run(["apt", "install", "curl", "libelf-dev", "pkg-config", "build-essential", "git", "dirmngr", "wireguard", "openresolv"])
 
-        """print("\nDownloading WireGuard and WireGuard tools\n")
-        sleep(2)
-        run(["git", "clone", "https://git.zx2c4.com/wireguard-linux-compat"])
-        run(["git", "clone", "https://git.zx2c4.com/wireguard-tools"])
-
-        print("\nCompiling WireGuard\n")
-        sleep(2)
-        run(["make -C wireguard-linux-compat/src -j$(nproc)"], shell=True)
-        run(["sudo", "make", "-C", "wireguard-linux-compat/src", "install"])
-
-        print("\nCompiling WireGuard tools\n")
-        sleep(2)
-        run(["make -C wireguard-tools/src -j$(nproc)"], shell=True)
-        run(["make", "-C", "wireguard-tools/src", "install"])
-
-        print("\nRemoving WireGuard source code")
-        sleep(2)
-        run(["rm", "-r", "wireguard-tools", "wireguard-linux-compat"])
-
-        ipv6 = input("\nWould you like to use IPv6? (If you don't know what this is, say no) [N/y]: ")
-
-        print("\nEnabling IP forwarding\n")
-        sleep(2)"""
-
         run("perl -pi -e 's/#{1,}?net.ipv4.ip_forward ?= ?(0|1)/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf", shell=True)
         #if 'y' in ipv6.lower():
         #    run("perl -pi -e 's/#{1,}?net.ipv6.conf.all.forwarding ?= ?(0|1)/net.ipv6.conf.all.forwarding = 1/g' /etc/sysctl.conf", shell=True)
@@ -90,12 +61,7 @@ try:
         run(["touch", "/etc/wireguard/run-script-to-configure"])
 
         print("\nWireGuard был установлен")
-        print("THIS SCRIPT WILL NEED TO BE RUN AGAIN TO FINISH CONFIGURING WIREGUARD")
 
-        input("\nPress enter to reboot...")
-        run("reboot")
-
-    elif exists("/etc/wireguard/run-script-to-configure"):
         run("umask 077 /etc/wireguard/", shell=True)
 
         print("\nGenerating keys")
@@ -107,7 +73,6 @@ try:
 
         print("\nWriting to file")
         print("This will create a 10.9.0.* subnet\n")
-        sleep(2)
 
         with open("/etc/wireguard/wg0.conf", "w") as wg0:
             wg0.write("[Interface]\n")
@@ -127,9 +92,8 @@ try:
 
             wg0.write("PrivateKey = " + spri + "\n")
 
-            interface = input("\nWhich interface are you using to connect to the internet? (eth0 for ethernet (default), wlan0 for Wi-Fi, etc.) ")
-            if interface == '':
-                interface = "eth0"
+
+            interface = "eth0"
 
             wg0.write("\nPostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o " + interface + " -j MASQUERADE\n")
             wg0.write("PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o " + interface + " -j MASQUERADE\n")

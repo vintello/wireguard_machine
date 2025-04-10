@@ -18,8 +18,8 @@ class Type_IP_List(str, enum.Enum):
     blacklist = "blacklist"
 
 
-class IPList(SQLModel, table=True):
-    __table_args__ = (UniqueConstraint("ip_addr"),)
+class IPListAccess(SQLModel, table=True):
+    #__table_args__ = (UniqueConstraint("ip_addr"),{'extend_existing': True})
     id: int | None = Field(default=None, primary_key=True)
     ip_addr: str = Field(index=True)
     type_rec: Type_IP_List = Field(sa_column=Column(name="type_rec",

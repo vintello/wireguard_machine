@@ -4,24 +4,27 @@ import sqlalchemy.exc
 import uvicorn
 import bcrypt
 import os
-from sqlmodel import Field, Session, SQLModel, create_engine, select, column
+from sqlmodel import Session, SQLModel, create_engine, select, column
 from typing import Annotated
-import configparser
 
-from fastapi import Depends, FastAPI, HTTPException, status, Request, BackgroundTasks
+from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, FileResponse, Response
-from models import SecurityConfig
-from handlers.midleware import SecurityMiddleware
-from models import Type_IP_List, IPList
-from schemas import IP_List_Response, IP_List_Query, IP_List_Update, List_IP_List_Update, List_IP_List_Update_response
-from schemas import ListClients, Client, ListClientsWithTotal
+from server.models import SecurityConfig
+from server.models import Type_IP_List, IPListAccess
+from server.schemas import IP_List_Response, IP_List_Query, IP_List_Update, List_IP_List_Update, List_IP_List_Update_response
+from server.schemas import ListClients, Client, ListClientsWithTotal
+from server.handlers.midleware import SecurityMiddleware
+from server.wireguard_users import gen_users
+
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
-loggersql = logging.getLogger('sqlalchemy.engine')
-loggersql.setLevel(logging.DEBUG)
+#loggersql = logging.getLogger('sqlalchemy.engine')
+#loggersql.setLevel(logging.INFO)
 
 if not hasattr(bcrypt, '__about__'):
     bcrypt.__about__ = type('about', (object,), {'__version__': bcrypt.__version__})
@@ -41,10 +44,11 @@ def get_session():
 def get_ip_list(type_ip:Type_IP_List):
     ip_list = set()
     with Session(engine) as session:
-        statement = select(IPList).where(IPList.type_rec == type_ip)
+        statement = select(IPListAccess).where(IPListAccess.type_rec == type_ip)
         results = session.exec(statement)
         for row in results.all():
             ip_list.add(row.ip_addr)
+    print("--", ip_list)
     return [ip for ip in ip_list]
 
 
@@ -77,9 +81,11 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    #swagger_favicon_url="/favicon.ico"
 )
 app.state.whitelist_list = get_ip_list(Type_IP_List.whitelist)
-print(app.state.whitelist_list)
+app.mount("/static", StaticFiles(directory="server/static"), name="static")
+#print(app.state.whitelist_list)
 
 config = SecurityConfig(
     # Whitelist/Blacklist
@@ -90,15 +96,12 @@ config = SecurityConfig(
     rate_limit_window=1000,
     # Auto-ban Configuration
     enable_ip_banning=True,
-    enable_penetration_detection=True,
+    enable_penetration_detection=False,
     auto_ban_threshold=1000,
     auto_ban_duration=1000,
     # Excluded Paths
     exclude_paths=[
-        #"/docs",
-        #"/redoc",
-        #"/openapi.json",
-        #"/openapi.yaml",
+        "/ping",
         "/favicon.ico",
         "/static",
     ],
@@ -106,18 +109,22 @@ config = SecurityConfig(
     blocked_user_agents=["badbot", "malicious-crawler"],
     # IPInfo integration
     ipinfo_token=str(os.getenv("IPINFO_TOKEN")),
-    #blocked_countries=["CN", "RU"],
-    # Redis integration
-    # NOTE: enable_redis=True by default
-    #redis_url="redis://localhost:6379",
-    #redis_prefix="fastapi_guard",
 )
-app.add_middleware(SecurityMiddleware, config=config)
 
+app.add_middleware(SecurityMiddleware, config=config)
 
 @app.get("/", include_in_schema=False)
 def index():
     return RedirectResponse("/docs")
+
+@app.get("/ping", tags=["work"])
+def ping_pong():
+    return "pong"
+
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon():
+    return FileResponse("server/static/favicon.ico")
+
 
 @app.get("/get-wire",
          tags=["work"],
@@ -147,6 +154,7 @@ async def get_wire(response: Response):
         response.status_code = 400
         return {"message": "no_serts_available"}
 
+
 @app.get("/whitelist",
          response_model=list[IP_List_Response],
          tags=["access"],
@@ -155,14 +163,15 @@ async def get_wire(response: Response):
          )
 async def list_whitelist(params: IP_List_Query = Depends()):
     with Session(engine) as session:
-        statement = select(IPList).where(IPList.type_rec == Type_IP_List.whitelist)
+        statement = select(IPListAccess).where(IPListAccess.type_rec == Type_IP_List.whitelist)
         if params.ip_addr:
             statement = statement.where(column("ip_addr").ilike(f"%{params.ip_addr}%"))
         if params.id:
-            statement = statement.where(IPList.id == params.id)
+            statement = statement.where(IPListAccess.id == params.id)
         #print(statement.compile(compile_kwargs={"literal_binds": True}))
         heroes = session.exec(statement).all()
         return heroes
+
 
 @app.post("/whitelist",
           response_model=List_IP_List_Update_response,
@@ -177,7 +186,7 @@ def post_whitelist(params: List_IP_List_Update = Depends()):
             try:
                 new_data = row.model_dump(exclude_unset=True)
                 new_data["type_rec"] = Type_IP_List.whitelist
-                rec = IPList(**new_data)
+                rec = IPListAccess(**new_data)
                 session.add(rec)
                 session.commit()
                 session.flush(rec)
@@ -193,6 +202,7 @@ def post_whitelist(params: List_IP_List_Update = Depends()):
             config.whitelist.append(row.ip_addr)
     return resp
 
+
 @app.patch("/whitelist/{id}",
            response_model=IP_List_Update,
            tags=["access"],
@@ -202,7 +212,7 @@ def post_whitelist(params: List_IP_List_Update = Depends()):
            )
 def update_whitelist(id: int, while_ip: IP_List_Update):
     with Session(engine) as session:
-        rec = session.get(IPList, id)
+        rec = session.get(IPListAccess, id)
         if not rec:
             raise HTTPException(status_code=404, detail=f"Record {id} not found")
         new_data = while_ip.model_dump(exclude_unset=True)
@@ -214,6 +224,7 @@ def update_whitelist(id: int, while_ip: IP_List_Update):
         config.whitelist.append(rec.ip_addr)
     return rec
 
+
 @app.delete("/whitelist/{id}",
             tags=["access"],
             description="на вход нужно подать id, который можно взять в пункте /whitelist",
@@ -221,13 +232,14 @@ def update_whitelist(id: int, while_ip: IP_List_Update):
             )
 def delete_from_whitelist(id: int):
     with Session(engine) as session:
-        rec = session.get(IPList, id)
+        rec = session.get(IPListAccess, id)
         if not rec:
             raise HTTPException(status_code=404, detail=f"Record {id} not found")
         session.delete(rec)
         session.commit()
         config.whitelist.remove(rec.ip_addr)
     return {"status": "success"}
+
 
 @app.get("/list_cfg/",
          response_model=ListClients,
@@ -281,5 +293,16 @@ def clients_scan(directory = "/etc/wireguard/clients"):
 
     return list_clients
 
+@app.get("/gen_clients/",
+         #response_model=ListClientsWithTotal,
+         tags=["wireguard"],
+         description="Генерируем необходимое количество клиентов. Если клиенты ранее существовали то будет добавлено указанное количество",
+         name="Генерация клиентов"
+)
+def gen_wireguard_users(number_clients:int, background_tasks: BackgroundTasks):
+    number_clients = 300
+    cfg_folder = "/etc/wireguard"
+    background_tasks.add_task(gen_users, number_clients, cfg_folder, logger)
+
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000)#, ssl_keyfile="path/to/key.pem", ssl_certfile="path/to/cert.pem")
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)

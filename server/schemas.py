@@ -1,4 +1,3 @@
-from models import IPList
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from typing import Optional, List
 from pydantic import BaseModel, SerializeAsAny
