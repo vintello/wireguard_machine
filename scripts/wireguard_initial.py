@@ -48,8 +48,6 @@ try:
         #if 'y' in ipv6.lower():
         #    run("perl -pi -e 's/#{1,}?net.ipv6.conf.all.forwarding ?= ?(0|1)/net.ipv6.conf.all.forwarding = 1/g' /etc/sysctl.conf", shell=True)
 
-        run(["touch", "/etc/wireguard/run-script-to-configure"])
-
         print("\nWireGuard был установлен")
 
         run("umask 077 /etc/wireguard/", shell=True)
@@ -66,16 +64,12 @@ try:
 
         with open("/etc/wireguard/wg0.conf", "w") as wg0:
             wg0.write("[Interface]\n")
-            wg0.write("Address = 10.9.0.1/24, fd08:4711::1/64\n")
+            wg0.write("Address = 10.9.0.1/24")
 
-            port = input("Which port would you like to use? (Type nothing for the default, 51820) ")
-            if port == '':
-                port = "51820"
+            port = "51820"
             wg0.write("ListenPort = " + port + "\n")
 
-            print("\nWhich DNS Server would you like to use? (Default: Cloudflare, 1.1.1.1) ")
-            print("If the device you are using currently is the DNS Server (like if you are using Pi-Hole or Unbound), use it's 'External' IP address, (i.e., 192.168.*.*)")
-            dns = input("See https://docs.pi-hole.net/guides/upstream-dns-providers/ for a good list: ")
+            dns = ""
             if dns == '':
                 dns = '1.1.1.1'
             wg0.write("DNS = " + dns + "\n")
