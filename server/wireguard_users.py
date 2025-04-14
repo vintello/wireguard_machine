@@ -1,12 +1,15 @@
 import ipaddress
+import os
 from subprocess import check_output, run
 from os import listdir, path
 from server.utils import get_file_source
 from server.ini_file_core import ServerConfig, ClientConfig, BaseModel
 import pydantic
+import pathlib
 
 def gen_users(number_clients, cfg_folder, logger):
     try:
+        pathlib.Path(path.join(cfg_folder, "clients")).mkdir(parents=True, exist_ok=True)
         clc_clients = len(listdir(path.join(cfg_folder, "clients")))
         serv_pub = get_file_source(path.join(cfg_folder,"server.pub"))
         serv_cfg = ServerConfig(path.join(cfg_folder, "wg0.conf"))

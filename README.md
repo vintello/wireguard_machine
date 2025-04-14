@@ -37,7 +37,7 @@ Wireguard Manager
 
    cp wireguad_machine.service wrg_machine.service
    nano wrg_machine.service 
-   cp wrg_machine.service  /etc/systemd/system/wrg_machine.service
+   sudo cp wrg_machine.service  /etc/systemd/system/wrg_machine.service
    systemctl enable wrg_machine
    systemctl start wrg_machine
 
