@@ -32,8 +32,6 @@ try:
         mess_window(mess, "warning")
         input("Нажмите Enter, чтобы продолжить...")
         run(["rm", "-r", "/etc/wireguard/"])
-        run(["mkdir", "/etc/wireguard/"])
-        run(["touch", "/etc/wireguard/run-script-to-configure"])
 
     if not exists("/etc/wireguard"):
 
