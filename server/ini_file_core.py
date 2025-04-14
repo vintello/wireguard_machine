@@ -1,5 +1,8 @@
 import pydantic
 import re
+import ipaddress
+
+from sqlalchemy.util import counter
 
 
 class BaseModel(pydantic.BaseModel, extra="allow"):
@@ -29,8 +32,13 @@ class CfgFile:
             yield x
 
     def read_from_file(self, file_name):
-        with open(file_name) as f:
-            lines = [line.rstrip() for line in f]
+        try:
+            with open(file_name) as f:
+                lines = [line.rstrip() for line in f]
+        except FileNotFoundError as ex:
+            lines= []
+        except Exception as ex:
+            raise ex
         self.file_source = file_name
 
         curr_model = pydantic.create_model("Default", __base__=BaseModel)()
@@ -65,3 +73,60 @@ class CfgFile:
             res+= row.model_to_str()
         with open(file_name, "w") as f:
             f.write(res)
+
+class ServerConfig:
+    def __init__(self, serv_conf=None):
+        self.serv_conf = serv_conf
+        self.conf_file = CfgFile()
+        self.conf_file.read_from_file(serv_conf)
+        self.max_AllowedIPs = None
+        self.file_source = None
+
+    def get_max_peer_network(self):
+        for row in self.conf_file.cfg:
+            if row.__class__.__name__== "Peer" and getattr(row,"AllowedIPs"):
+
+                if self.max_AllowedIPs:
+                    self.max_AllowedIPs = max(ipaddress.ip_network(getattr(row, "AllowedIPs")), self.max_AllowedIPs)
+                else:
+                    self.max_AllowedIPs = ipaddress.ip_network(getattr(row,"AllowedIPs"))
+
+    def append_peer(self, peer):
+        for row in self.conf_file:
+            if row.__class__.__name__ == "Peer":
+                if row.PublicKey == peer.PublicKey:
+                    raise Exception("Такой Peer уже существует в конфиге")
+        if not peer._sequence:
+            peer._sequence = self.conf_file.get_len()
+        self.conf_file.append_section(peer)
+
+    def write(self, file_name=None):
+
+        if not file_name:
+            file_name = self.serv_conf
+        self.conf_file.write(file_name)
+
+    def get_section(self, name, numb=None):
+        res = []
+        count = 0
+        for section in self.conf_file:
+            if section.__class__.__name__ == name:
+                if count == numb:
+                    res.append(section)
+                count += 1
+        return res
+
+
+class ClientConfig:
+    def __init__(self, conf_file_name=None):
+        self.conf_file_name = conf_file_name
+        self.conf_file = CfgFile()
+        self.conf_file.read_from_file(conf_file_name)
+
+    def append_section(self, section):
+        if not section._sequence:
+            section._sequence = self.conf_file.get_len()
+        self.conf_file.append_section(section)
+
+    def write(self, file_name):
+        self.conf_file.write(file_name)

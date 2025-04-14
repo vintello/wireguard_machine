@@ -20,14 +20,6 @@ def mess_window(mess, type_mess="error"):
 
 
 try:
-    # проверяем наличие базы данных
-    if not exists("../database.db"):
-        mess_window("Не найдена база данных. Необходимо в первую очередь запустить проект", )
-        exit()
-    if not "root" in str(check_output("whoami")):
-        mess_window("Этот скрипт нужно запускать от имени администратора (root), используй 'sudo'.")
-        exit()
-
 
     if exists("/etc/wireguard") and not exists("/etc/wireguard/run-script-to-add-more-clients") and not exists("/etc/wireguard/run-script-to-configure"):
         mess = '''

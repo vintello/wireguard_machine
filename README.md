@@ -3,9 +3,23 @@
 Wireguard Manager
 
 # Установка
-1. клонируем репозитарий
+создаем пользователя
 
-    ``git clone git@github.com:vintello/wireguard_machine.git``
+   sudo adduser wmuser
+
+добавляем в группу root
+
+   sudo usermod -aG root wmuser
+
+1. генерируем ssh ключ 
+
+   ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+
+
+2. клонируем репозитарий
+
+
+    ``git clone https://github.com/vintello/wireguard_machine.git``
 
 2. устанавливаем зависимости
 

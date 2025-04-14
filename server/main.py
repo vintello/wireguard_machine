@@ -12,19 +12,19 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, FileResponse, Response
 from server.models import SecurityConfig
 from server.models import Type_IP_List, IPListAccess
-from server.schemas import IP_List_Response, IP_List_Query, IP_List_Update, List_IP_List_Update, List_IP_List_Update_response
+from server.schemas import IP_List_Response, IP_List_Query, IP_List_Update, List_IP_List_Update, \
+    List_IP_List_Update_response
 from server.schemas import ListClients, Client, ListClientsWithTotal
 from server.handlers.midleware import SecurityMiddleware
 from server.wireguard_users import gen_users
-
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
-#loggersql = logging.getLogger('sqlalchemy.engine')
-#loggersql.setLevel(logging.INFO)
+# loggersql = logging.getLogger('sqlalchemy.engine')
+# loggersql.setLevel(logging.INFO)
 
 if not hasattr(bcrypt, '__about__'):
     bcrypt.__about__ = type('about', (object,), {'__version__': bcrypt.__version__})
@@ -37,11 +37,13 @@ engine = create_engine(sqlite_url, connect_args=connect_args)
 
 SQLModel.metadata.create_all(engine)
 
+
 def get_session():
     with Session(engine) as session:
         yield session
 
-def get_ip_list(type_ip:Type_IP_List):
+
+def get_ip_list(type_ip: Type_IP_List):
     ip_list = set()
     with Session(engine) as session:
         statement = select(IPListAccess).where(IPListAccess.type_rec == type_ip)
@@ -50,7 +52,6 @@ def get_ip_list(type_ip:Type_IP_List):
             ip_list.add(row.ip_addr)
     print("--", ip_list)
     return [ip for ip in ip_list]
-
 
 
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -81,16 +82,16 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    #swagger_favicon_url="/favicon.ico"
+    # swagger_favicon_url="/favicon.ico"
 )
 app.state.whitelist_list = get_ip_list(Type_IP_List.whitelist)
 app.mount("/static", StaticFiles(directory="server/static"), name="static")
-#print(app.state.whitelist_list)
+# print(app.state.whitelist_list)
 
 config = SecurityConfig(
     # Whitelist/Blacklist
-    whitelist=app.state.whitelist_list,#get_ip_list(Type_IP_List.whitelist),#["0.0.0.0", "0.0.0.0/0"],
-    blacklist=[],#"192.168.0.1/32", "10.0.0.100/32"],
+    whitelist=app.state.whitelist_list,  # get_ip_list(Type_IP_List.whitelist),#["0.0.0.0", "0.0.0.0/0"],
+    blacklist=[],  # "192.168.0.1/32", "10.0.0.100/32"],
     # Rate Limiting
     rate_limit=1000,
     rate_limit_window=1000,
@@ -113,13 +114,16 @@ config = SecurityConfig(
 
 app.add_middleware(SecurityMiddleware, config=config)
 
+
 @app.get("/", include_in_schema=False)
 def index():
     return RedirectResponse("/docs")
 
+
 @app.get("/ping", tags=["work"])
 def ping_pong():
     return "pong"
+
 
 @app.get('/favicon.ico', include_in_schema=False)
 async def favicon():
@@ -129,11 +133,11 @@ async def favicon():
 @app.get("/get-wire",
          tags=["work"],
          description="""Возвращает свободный конфиг и маркирует его как выданный. при следующем запросе выдаст новый
-         
+
          пример получения :
-         
+
              $ wget -O client.conf http://<domain>/get-wire 
-         
+
          """,
          name="Получить свободный конфиг"
          )
@@ -149,7 +153,7 @@ async def get_wire(response: Response):
         file_path = os.path.join(folder_, "used.lock")
         with open(file_path, 'a'):
             os.utime(file_path, None)
-        return FileResponse(path=file_, filename='config.conf')#, media_type='multipart/form-data')
+        return FileResponse(path=file_, filename='config.conf')  # , media_type='multipart/form-data')
     else:
         response.status_code = 400
         return {"message": "no_serts_available"}
@@ -168,7 +172,7 @@ async def list_whitelist(params: IP_List_Query = Depends()):
             statement = statement.where(column("ip_addr").ilike(f"%{params.ip_addr}%"))
         if params.id:
             statement = statement.where(IPListAccess.id == params.id)
-        #print(statement.compile(compile_kwargs={"literal_binds": True}))
+        # print(statement.compile(compile_kwargs={"literal_binds": True}))
         heroes = session.exec(statement).all()
         return heroes
 
@@ -178,7 +182,7 @@ async def list_whitelist(params: IP_List_Query = Depends()):
           tags=["access"],
           description="на вход можно загрузить список IP адресов для добавления.",
           name="Добавление IP адресов"
-)
+          )
 def post_whitelist(params: List_IP_List_Update = Depends()):
     with Session(engine) as session:
         result = []
@@ -195,9 +199,8 @@ def post_whitelist(params: List_IP_List_Update = Depends()):
                 session.rollback()
                 fill_resp = IP_List_Response(**{"id": None, "ip_addr": rec.ip_addr})
 
-
             result.append(fill_resp)
-        resp = List_IP_List_Update_response(items = result)
+        resp = List_IP_List_Update_response(items=result)
         for row in result:
             config.whitelist.append(row.ip_addr)
     return resp
@@ -251,12 +254,13 @@ def scan_wireguard_user_configs(background_tasks: BackgroundTasks):
     data = clients_scan()
     return data
 
+
 @app.get("/statistic/",
          response_model=ListClientsWithTotal,
          tags=["wireguard"],
          description="Отображает сводку по занятым и свободным конфигам в количественном выражении",
          name="Просмотр краткой сводки по конфигам"
-)
+         )
 def free_for_use_wireguard_user_configs(background_tasks: BackgroundTasks):
     selected_clients = ListClientsWithTotal()
     data = clients_scan()
@@ -265,15 +269,16 @@ def free_for_use_wireguard_user_configs(background_tasks: BackgroundTasks):
     free_ = 0
     for row in data.clients:
         if not row.used:
-            #selected_clients.clients.append(row)
-            free_ +=1
+            # selected_clients.clients.append(row)
+            free_ += 1
         else:
-            used_+=1
+            used_ += 1
     selected_clients.used = used_
     selected_clients.free = free_
     return selected_clients
 
-def clients_scan(directory = "/etc/wireguard/clients"):
+
+def clients_scan(directory="/etc/wireguard/clients"):
     list_clients = ListClients()
     tree = list(os.walk(directory))
     for row in tree:
@@ -285,24 +290,26 @@ def clients_scan(directory = "/etc/wireguard/clients"):
             files_list = [os.path.splitext(file_) for file_ in row[2]]
             for file_ in files_list:
                 if ".conf" in file_[1]:
-                    client.cfg_file = os.path.join(row[0], file_[0]+file_[1])
+                    client.cfg_file = os.path.join(row[0], file_[0] + file_[1])
                 if ".lock" in file_[1]:
                     client.used = True
             list_clients.clients.append(client)
 
-
     return list_clients
 
+
 @app.get("/gen_clients/",
-         #response_model=ListClientsWithTotal,
+         # response_model=ListClientsWithTotal,
          tags=["wireguard"],
          description="Генерируем необходимое количество клиентов. Если клиенты ранее существовали то будет добавлено указанное количество",
          name="Генерация клиентов"
-)
-def gen_wireguard_users(number_clients:int, background_tasks: BackgroundTasks):
-    number_clients = 300
+         )
+def gen_wireguard_users(number_clients: int = 300):
+    # number_clients = 300
     cfg_folder = "/etc/wireguard"
-    background_tasks.add_task(gen_users, number_clients, cfg_folder, logger)
+    gen_users(number_clients, cfg_folder, logger)
+    return "success"
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000)
