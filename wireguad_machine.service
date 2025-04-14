@@ -8,7 +8,7 @@ Type=forking
 PIDFile=/home/wmuser/wireguard_machine/service.pid
 Type=simple
 WorkingDirectory=/home/wmuser/wireguard_machine
-ExecStart=/home/wmuser/wireguard_machine/.venv/bin/uvicorn server.main:app --host 0.0.0.0 --port 8080
+ExecStart=/home/wmuser/wireguard_machine/env/bin/uvicorn server.main:app --host 0.0.0.0 --port 8080
 Restart=always[Install]
 
 [Install]

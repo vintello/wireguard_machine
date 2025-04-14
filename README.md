@@ -10,8 +10,13 @@ Wireguard Manager
 добавляем в группу root
 
    sudo usermod -aG root wmuser
+   
+   sudo adduser wmuser sudo
 
-1. генерируем ssh ключ 
+
+   su - wmuser
+
+1. генерируем ssh ключ ????
 
    ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 
@@ -21,7 +26,13 @@ Wireguard Manager
 
     ``git clone https://github.com/vintello/wireguard_machine.git``
 
+переходим в папку 
+
+   cd wireguard_machine
+
 создаем виртуальное окружение
+
+   sudo apt install python3.12-venv
 
    python3 -m venv env
 
@@ -38,8 +49,8 @@ Wireguard Manager
    cp wireguad_machine.service wrg_machine.service
    nano wrg_machine.service 
    sudo cp wrg_machine.service  /etc/systemd/system/wrg_machine.service
-   systemctl enable wrg_machine
-   systemctl start wrg_machine
+   sudo systemctl enable wrg_machine
+   sudo systemctl start wrg_machine
 
 3. от имени администратора запускаем скрипты по установке и генерации пользователей
 4. устанавливаем как сервис

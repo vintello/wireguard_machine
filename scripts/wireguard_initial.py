@@ -38,11 +38,14 @@ try:
         print("\nОбновление системы\n")
         sleep(2)
         run(["apt", "update"])
-        run(["apt", "upgrade"])
+        #run(["apt", "upgrade"])
 
         print("\nУстановка зависимостей\n")
         sleep(2)
-        run(["apt", "install", "curl", "libelf-dev", "pkg-config", "build-essential", "git", "dirmngr", "wireguard", "openresolv"])
+        app_list = ["curl", "libelf-dev", "pkg-config", "build-essential", "git", "dirmngr", "wireguard", "openresolv", "resolvconf"]
+        for app in app_list:
+            print(f"     {app}")
+            run(f"apt install {app}", shell=True)
 
         run("perl -pi -e 's/#{1,}?net.ipv4.ip_forward ?= ?(0|1)/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf", shell=True)
         #if 'y' in ipv6.lower():
