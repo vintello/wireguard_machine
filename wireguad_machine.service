@@ -3,11 +3,12 @@ Description=Token Wireguard Server
 After=network.target[Service]
 
 [Service]
+user=wmuser
 Type=forking
-PIDFile=<PATH TO PROJECT>/service.pid
+PIDFile=/home/wmuser/wireguard_machine/service.pid
 Type=simple
-WorkingDirectory=<PATH TO PROJECT>/wireguard_machine
-ExecStart=<PATH TO PROJECT>/wireguard_machine/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8080
+WorkingDirectory=/home/wmuser/wireguard_machine
+ExecStart=/home/wmuser/wireguard_machine/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8080
 Restart=always[Install]
 
 [Install]

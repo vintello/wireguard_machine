@@ -21,9 +21,25 @@ Wireguard Manager
 
     ``git clone https://github.com/vintello/wireguard_machine.git``
 
+создаем виртуальное окружение
+
+   python3 -m venv env
+
+активируем виртуальное окружение 
+
+   source env/bin/activate
+
 2. устанавливаем зависимости
 
     ``pip install -r requirements.txt``
+
+демонизируем приложение
+
+   cp wireguad_machine.service wrg_machine.service
+   nano wrg_machine.service 
+   cp wrg_machine.service  /etc/systemd/system/wrg_machine.service
+   systemctl enable wrg_machine
+   systemctl start wrg_machine
 
 3. от имени администратора запускаем скрипты по установке и генерации пользователей
 4. устанавливаем как сервис
