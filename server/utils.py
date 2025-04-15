@@ -349,10 +349,7 @@ def get_file_source(file_name):
     return source_txt.strip()
 
 def run_system_command(command: str) -> Optional[str]:
-    """Выполняет системную команду и возвращает её вывод.
-    :param command: Системная команда для выполнения.
-    :return: Вывод команды или None, если произошла ошибка.
-    """
+    """Выполняет системную команду и возвращает её вывод."""
     result = os.system(command)
     return result
 
