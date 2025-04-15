@@ -1,5 +1,6 @@
 # fastapi_guard/utils.py
 import logging
+import pathlib
 import re
 from ipaddress import IPv4Address, ip_network
 from typing import Any, Optional
@@ -364,3 +365,11 @@ def run_system_command(command: str) -> Optional[str]:
     except subprocess.CalledProcessError as e:
         print(f"Ошибка при выполнении команды '{command}': {e.stderr}")
         return None
+
+def get_host_server_ip(file_name="/etc/wireguard/ip_host"):
+    res = None
+    if pathlib.Path(file_name).exists():
+        res = get_file_source(file_name)
+    if not res:
+        res = str(subprocess.check_output(["curl", "https://checkip.amazonaws.com/"]))[2:-3]
+    return res

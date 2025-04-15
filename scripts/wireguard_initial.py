@@ -90,6 +90,9 @@ try:
         run(["chmod", "-R", "og-rwx", "/etc/wireguard"])
         run(["wg-quick", "up", "wg0"])
 
+        with open("/etc/wireguard/ip_host", "w") as f_ip_host:
+            ip_host = str(check_output(["curl", "https://checkip.amazonaws.com/"]))[2:-3]
+            f_ip_host.write(ip_host)
         #run(["rm", "/etc/wireguard/run-script-to-configure"])
         run(["mkdir", "/etc/wireguard/clients"])
         #run(["touch", "/etc/wireguard/run-script-to-add-more-clients"])

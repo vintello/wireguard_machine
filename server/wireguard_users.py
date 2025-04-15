@@ -3,7 +3,7 @@ import os
 from logging import Logger
 from subprocess import check_output, run
 from os import listdir, path
-from server.utils import get_file_source
+from server.utils import get_file_source, get_host_server_ip
 from server.ini_file_core import ServerConfig, ClientConfig, BaseModel
 import pydantic
 import server.utils
@@ -14,7 +14,7 @@ def gen_users(number_clients, cfg_folder, logger:Logger):
     clc_clients = len(listdir(path.join(cfg_folder, "clients")))
     serv_pub = get_file_source(path.join(cfg_folder,"server.pub"))
     serv_cfg = ServerConfig(path.join(cfg_folder, "wg0.conf"))
-    ip = str(check_output(["curl", "https://checkip.amazonaws.com/"]))[2:-3]
+    ip_serv = get_host_server_ip()
     interface = serv_cfg.get_section("Interface", 0)[0]
     if interface:
         serv_addr = interface.Address.split(",")[0].strip()
@@ -58,7 +58,7 @@ def gen_users(number_clients, cfg_folder, logger:Logger):
 
         new_client_peer = pydantic.create_model("Peer", __base__=BaseModel)()
         new_client_peer.PublicKey = serv_pub
-        new_client_peer.Endpoint = f"{ip}:{serv_port}"
+        new_client_peer.Endpoint = f"{ip_serv}:{serv_port}"
         new_client_peer.AllowedIPs = "0.0.0.0/0"
         new_client_peer.PersistentKeepalive = 20
         client_conf.append_section(new_client_peer)
