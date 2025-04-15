@@ -1,5 +1,6 @@
 # fastapi_guard/utils.py
 import logging
+import os
 import pathlib
 import re
 from ipaddress import IPv4Address, ip_network
@@ -352,19 +353,8 @@ def run_system_command(command: str) -> Optional[str]:
     :param command: Системная команда для выполнения.
     :return: Вывод команды или None, если произошла ошибка.
     """
-    try:
-        result = subprocess.run(
-            command,
-            shell=True,
-            check=True,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        print(f"Ошибка при выполнении команды '{command}': {e.stderr}")
-        return None
+    result = os.system(command)
+    return result
 
 def get_host_server_ip(file_name="/etc/wireguard/ip_host"):
     res = None
