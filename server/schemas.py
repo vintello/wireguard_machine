@@ -3,8 +3,8 @@ from typing import Optional, List
 from pydantic import BaseModel, SerializeAsAny
 
 class IP_List_Response(SQLModel):
-    id: int | None
-    ip_addr: str | None
+    id: Optional[int]
+    ip_addr: Optional[str]
 
 class IP_List_Query(SQLModel):
     id: Optional[int] = None
