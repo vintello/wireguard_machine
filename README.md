@@ -54,9 +54,10 @@ Wireguard Manager
 
    sudo systemctl status wrg_machine
 
-3. от имени администратора запускаем скрипты по установке и генерации пользователей
+3. от имени администратора запускаем скрипты по установке 
 
+   cd scripts
+   sudo python3 wireguard_initial.py
 
-5. добавляем айпи для доступа
 
 # Заметки
