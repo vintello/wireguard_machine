@@ -169,7 +169,7 @@ async def check_ip_country(request: (Union[str, Request]), config: SecurityConfi
     return False
 
 
-async def is_ip_allowed(ip: str, config: SecurityConfig, ipinfo_db: IPInfoManager | None = None) -> bool:
+async def is_ip_allowed(ip: str, config: SecurityConfig, ipinfo_db: Optional[IPInfoManager] = None) -> bool:
     """
     Check if the IP address is allowed
     based on the security configuration.
