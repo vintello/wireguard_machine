@@ -215,7 +215,7 @@ class SecurityConfig(BaseModel):
         will be sent instead of continuing the middleware chain.
     """
 
-    custom_response_modifier: Callable[[Response], Awaitable[Response]] | None = Field(
+    custom_response_modifier: Optional[Callable[[Response], Awaitable[Response]]] = Field(
         default=None,
         description="A custom function to modify the response before it's sent",
     )
