@@ -5,7 +5,6 @@ import uvicorn
 import bcrypt
 import os
 from sqlmodel import Session, SQLModel, create_engine, select, column
-from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
@@ -61,7 +60,6 @@ def get_ip_list(type_ip: Type_IP_List):
     return [ip for ip in ip_list]
 
 
-SessionDep = Annotated[Session, Depends(get_session)]
 description = """
 работа с конфигами клиентов для Wireguard сервера. 🚀
 
