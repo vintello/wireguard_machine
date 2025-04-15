@@ -29,6 +29,8 @@ def gen_users(number_clients, cfg_folder, logger:Logger):
         serv_ip_addr_next = serv_ip_addr + 1
         max_network_on_serv_conf = str(ipaddress.ip_network(f"{serv_ip_addr_next}/32"))
     else:
+        logger.info(type(max_network_on_serv_conf))
+        logger.info(max_network_on_serv_conf)
         serv_ip_addr_next = max_network_on_serv_conf + 1
         max_network_on_serv_conf = str(ipaddress.ip_network(f"{serv_ip_addr_next}/32"))
 
