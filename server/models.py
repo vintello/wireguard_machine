@@ -2,7 +2,7 @@ from collections.abc import Awaitable, Callable
 from ipaddress import IPv4Address, ip_network
 from pathlib import Path
 from typing import Any
-from typing import Optional, List
+from typing import Optional, List, Dict
 import enum
 from fastapi import Request, Response
 from pydantic import BaseModel, Field, field_validator
@@ -167,7 +167,7 @@ class SecurityConfig(BaseModel):
         for logging security events.
     """
 
-    custom_error_responses: dict[int, str] = Field(
+    custom_error_responses: Dict[int, str] = Field(
         default={}, description="Custom error for specific HTTP status codes"
     )
     """
