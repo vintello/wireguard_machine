@@ -4,7 +4,7 @@ import os
 import pathlib
 import re
 from ipaddress import IPv4Address, ip_network
-from typing import Any, Optional
+from typing import Any, Optional, Union
 import subprocess
 
 from fastapi import Request
@@ -100,7 +100,7 @@ async def is_user_agent_allowed(user_agent: str, config: SecurityConfig) -> bool
     return True
 
 
-async def check_ip_country(request: str | Request, config: SecurityConfig, ipinfo_db: IPInfoManager) -> bool:
+async def check_ip_country(request: (Union[str, Request]), config: SecurityConfig, ipinfo_db: IPInfoManager) -> bool:
     """
     Check if IP is from a blocked country
     or in the whitelist.
