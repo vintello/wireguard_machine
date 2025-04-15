@@ -5,7 +5,7 @@ import uvicorn
 import bcrypt
 import os
 from sqlmodel import Session, SQLModel, create_engine, select, column
-
+from typing import List
 from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, FileResponse, Response
@@ -164,7 +164,7 @@ async def get_wire(response: Response):
 
 
 @app.get("/whitelist",
-         response_model=list[IP_List_Response],
+         response_model=List[IP_List_Response],
          tags=["access"],
          description="Полный список всех разрешенных IP для доступа к сервису.",
          name="Получить список IP адресов и их Id"
