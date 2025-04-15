@@ -1,7 +1,7 @@
 #from collections.abc import Awaitable
 from ipaddress import IPv4Address, ip_network
 from pathlib import Path
-from typing import Any
+from typing import Any, Set
 from typing import Optional, List, Dict, Callable, Awaitable
 import enum
 from fastapi import Request, Response
@@ -290,7 +290,7 @@ class SecurityConfig(BaseModel):
         request can be cached.
     """
 
-    block_cloud_providers: Optional[set[str]] = Field(
+    block_cloud_providers: Optional[Set[str]] = Field(
         default=None, description="Set of cloud provider names to block"
     )
     """
