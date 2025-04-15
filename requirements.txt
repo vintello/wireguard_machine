@@ -42,9 +42,6 @@ sniffio
 SQLAlchemy
 sqlmodel
 starlette
-typer
-typing-inspection
-typing_extensions
 uvicorn
 uvloop
 watchfiles
