@@ -44,7 +44,7 @@ try:
         sleep(2)
         app_list = ["curl", "libelf-dev", "pkg-config", "build-essential", "git", "dirmngr", "wireguard", "openresolv", "resolvconf"]
         for app in app_list:
-            print(f"     {app}")
+            print(f"   -----  {app} -----")
             run(f"apt install {app}", shell=True)
 
         run("perl -pi -e 's/#{1,}?net.ipv4.ip_forward ?= ?(0|1)/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf", shell=True)
@@ -67,7 +67,7 @@ try:
 
         with open("/etc/wireguard/wg0.conf", "w") as wg0:
             wg0.write("[Interface]\n")
-            wg0.write("Address = 10.9.0.1/24")
+            wg0.write("Address = 10.9.0.1/24"+ "\n")
 
             port = "51820"
             wg0.write("ListenPort = " + port + "\n")
@@ -82,17 +82,17 @@ try:
 
             interface = "eth0"
 
-            wg0.write("\nPostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o " + interface + " -j MASQUERADE\n")
-            wg0.write("PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o " + interface + " -j MASQUERADE\n")
+            wg0.write("\nPostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o " + interface + " -j MASQUERADE")
+            wg0.write("\nPostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o " + interface + " -j MASQUERADE")
 
         run(["systemctl", "enable", "wg-quick@wg0"])
         run(["chown", "-R", "root:root", "/etc/wireguard"])
         run(["chmod", "-R", "og-rwx", "/etc/wireguard"])
         run(["wg-quick", "up", "wg0"])
 
-        run(["rm", "/etc/wireguard/run-script-to-configure"])
+        #run(["rm", "/etc/wireguard/run-script-to-configure"])
         run(["mkdir", "/etc/wireguard/clients"])
-        run(["touch", "/etc/wireguard/run-script-to-add-more-clients"])
+        #run(["touch", "/etc/wireguard/run-script-to-add-more-clients"])
 
         print("\nКонфигурация сервера завершена")
 

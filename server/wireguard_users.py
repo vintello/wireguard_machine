@@ -32,11 +32,11 @@ def gen_users(number_clients, cfg_folder, logger):
 
             run(f"wg genkey | tee {client_folder}/{client_name}.key | wg pubkey > {client_folder}/{client_name}.pub", shell=True)
 
-            client_conf_file = path.join(client_folder,f"{client_name}.conf")
-            client_pub_key = path.join(client_folder,f"{client_name}.pub")
-            client_priv_key = path.join(client_folder,f"{client_name}.key")
+            client_conf_file_path = path.join(client_folder,f"{client_name}.conf")
+            client_pub_key = get_file_source(path.join(client_folder,f"{client_name}.pub"))
+            client_priv_key = get_file_source(path.join(client_folder,f"{client_name}.key"))
 
-            client_conf = ClientConfig(client_conf_file)
+            client_conf = ClientConfig(client_conf_file_path)
             # client config
             new_client_inter = pydantic.create_model("Interface", __base__=BaseModel)()
             max_network_on_serv_conf = serv_cfg.get_max_peer_network()
@@ -46,7 +46,7 @@ def gen_users(number_clients, cfg_folder, logger):
 
             new_client_inter.Address = max_network_on_serv_conf
             new_client_inter.DNS = serv_dns
-            new_client_inter.PrivateKey = get_file_source(client_priv_key)
+            new_client_inter.PrivateKey = client_priv_key
             client_conf.append_section(new_client_inter)
 
             new_client_peer = pydantic.create_model("Peer", __base__=BaseModel)()
@@ -55,7 +55,7 @@ def gen_users(number_clients, cfg_folder, logger):
             new_client_peer.AllowedIPs = "0.0.0.0/0"
             new_client_peer.PersistentKeepalive = 20
             client_conf.append_section(new_client_peer)
-            client_conf.write(client_conf_file)
+            client_conf.write(client_conf_file_path)
             # server config
             new_server_peer = pydantic.create_model("Peer", __base__=BaseModel)()
             new_server_peer.PublicKey = client_pub_key
