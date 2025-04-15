@@ -2,7 +2,7 @@ from collections.abc import Awaitable, Callable
 from ipaddress import IPv4Address, ip_network
 from pathlib import Path
 from typing import Any
-from typing import Optional
+from typing import Optional, List
 import enum
 from fastapi import Request, Response
 from pydantic import BaseModel, Field, field_validator
@@ -93,7 +93,7 @@ class SecurityConfig(BaseModel):
         The prefix for Redis keys to avoid collisions with other applications.
     """
 
-    whitelist: Optional[list[str]] = Field(
+    whitelist: Optional[List[str]] = Field(
         default=None, description="Allowed IP addresses or CIDR ranges"
     )
     """
@@ -103,7 +103,7 @@ class SecurityConfig(BaseModel):
         If set to None, no whitelist is applied.
     """
 
-    blacklist: list[str] = Field(
+    blacklist: List[str] = Field(
         default=[], description="Blocked IP addresses or CIDR ranges"
     )
     """
@@ -112,7 +112,7 @@ class SecurityConfig(BaseModel):
         ranges that are always blocked.
     """
 
-    whitelist_countries: list[str] = Field(
+    whitelist_countries: List[str] = Field(
         default=[], description="A list of country codes that are always allowed"
     )
     """
@@ -121,7 +121,7 @@ class SecurityConfig(BaseModel):
         always allowed.
     """
 
-    blocked_countries: list[str] = Field(
+    blocked_countries: List[str] = Field(
         default=[], description="A list of country codes that are always blocked"
     )
     """
@@ -129,7 +129,7 @@ class SecurityConfig(BaseModel):
         A list of country codes that are always blocked.
     """
 
-    blocked_user_agents: list[str] = Field(
+    blocked_user_agents: List[str] = Field(
         default=[], description="Blocked user agents"
     )
     """
@@ -234,7 +234,7 @@ class SecurityConfig(BaseModel):
         Whether to enable CORS.
     """
 
-    cors_allow_origins: list[str] = Field(
+    cors_allow_origins: List[str] = Field(
         default=["*"], description="Origins allowed in CORS requests"
     )
     """
@@ -243,7 +243,7 @@ class SecurityConfig(BaseModel):
         are allowed to access the API.
     """
 
-    cors_allow_methods: list[str] = Field(
+    cors_allow_methods: List[str] = Field(
         default=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         description="Methods allowed in CORS requests",
     )
@@ -253,7 +253,7 @@ class SecurityConfig(BaseModel):
         are allowed to access the API.
     """
 
-    cors_allow_headers: list[str] = Field(
+    cors_allow_headers: List[str] = Field(
         default=["*"], description="Headers allowed in CORS requests"
     )
     """
@@ -271,7 +271,7 @@ class SecurityConfig(BaseModel):
         in CORS requests.
     """
 
-    cors_expose_headers: list[str] = Field(
+    cors_expose_headers: List[str] = Field(
         default=[], description="Headers exposed in CORS responses"
     )
     """
@@ -299,7 +299,7 @@ class SecurityConfig(BaseModel):
         Supported values: 'AWS', 'GCP', 'Azure'
     """
 
-    exclude_paths: list[str] = Field(
+    exclude_paths: List[str] = Field(
         default=[
             "/docs",
             "/redoc",
