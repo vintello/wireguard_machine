@@ -29,9 +29,7 @@ def gen_users(number_clients, cfg_folder, logger:Logger):
         serv_ip_addr_next = serv_ip_addr + 1
         max_network_on_serv_conf = str(ipaddress.ip_network(f"{serv_ip_addr_next}/32"))
     else:
-        logger.info(type(max_network_on_serv_conf))
-        logger.info(max_network_on_serv_conf)
-        serv_ip_addr_next = max_network_on_serv_conf + 1
+        serv_ip_addr_next = max_network_on_serv_conf.hosts() + 1
         max_network_on_serv_conf = str(ipaddress.ip_network(f"{serv_ip_addr_next}/32"))
 
     for numb in range(clc_clients, clc_clients + number_clients):
@@ -78,11 +76,6 @@ def gen_users(number_clients, cfg_folder, logger:Logger):
         run(f'ip -4 route add {max_network_on_serv_conf} dev wg0')
 
         # Увеличиваем текущий айпишник на единицу
-        try:
-            max_network_on_serv_conf = max_network_on_serv_conf +1
-        except Exception as ex:
-            logger.exception("смотри   ")
-            logger.info(type(max_network_on_serv_conf))
-            logger.info(max_network_on_serv_conf)
-            raise ex
+        serv_ip_addr_next = max_network_on_serv_conf.hosts() + 1
+        max_network_on_serv_conf = str(ipaddress.ip_network(f"{serv_ip_addr_next}/32"))
 
