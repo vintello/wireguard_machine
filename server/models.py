@@ -57,7 +57,7 @@ class SecurityConfig(BaseModel):
         The IPInfo API token for IP geolocation.
     """
 
-    ipinfo_db_path: Path | None = Field(
+    ipinfo_db_path: Optional[Path] = Field(
         default=Path("data/ipinfo/country_asn.mmdb"),
         description="Path to the IPInfo database file",
     )
@@ -75,7 +75,7 @@ class SecurityConfig(BaseModel):
         Whether to enable Redis for distributed state management.
     """
 
-    redis_url: str | None = Field(
+    redis_url: Optional[str] = Field(
         default="redis://localhost:6379",
         description="Redis URL for distributed state management",
     )
@@ -93,7 +93,7 @@ class SecurityConfig(BaseModel):
         The prefix for Redis keys to avoid collisions with other applications.
     """
 
-    whitelist: list[str] | None = Field(
+    whitelist: Optional[list[str]] = Field(
         default=None, description="Allowed IP addresses or CIDR ranges"
     )
     """
@@ -157,7 +157,7 @@ class SecurityConfig(BaseModel):
         reaching the auto-ban threshold.
     """
 
-    custom_log_file: str | None = Field(
+    custom_log_file: Optional[str] = Field(
         default=None,
         description="The path to a custom log file for logging security events",
     )
@@ -290,7 +290,7 @@ class SecurityConfig(BaseModel):
         request can be cached.
     """
 
-    block_cloud_providers: set[str] | None = Field(
+    block_cloud_providers: Optional[set[str]] = Field(
         default=None, description="Set of cloud provider names to block"
     )
     """
