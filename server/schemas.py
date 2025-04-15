@@ -14,10 +14,10 @@ class IP_List_Update(SQLModel):
     ip_addr: Optional[str]
 
 class List_IP_List_Update(SQLModel):
-    items: list[IP_List_Update]
+    items: List[IP_List_Update]
 
 class List_IP_List_Update_response(SQLModel):
-    items: list[IP_List_Response]
+    items: List[IP_List_Response]
 
 class Client(BaseModel):
     name: str
