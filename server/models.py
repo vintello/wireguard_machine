@@ -198,7 +198,7 @@ class SecurityConfig(BaseModel):
         If True, all HTTP requests will be redirected to HTTPS.
     """
 
-    custom_request_check: Callable[[Request], Awaitable[Optional[Response]]] | None = (
+    custom_request_check: Optional[Callable[[Request], Awaitable[Optional[Response]]]] = (
         Field(default=None, description="Perform additional checks on the request")
     )
     """
