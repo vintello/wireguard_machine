@@ -1,7 +1,8 @@
 # fastapi_guard/middleware.py
 import logging
 import time
-from collections.abc import Awaitable, Callable
+#from collections.abc import Awaitable, Callable
+from typing import Awaitable, Callable
 
 from cachetools import TTLCache
 from fastapi import FastAPI, Request, Response, status
