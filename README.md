@@ -32,7 +32,7 @@ Wireguard Manager
 
 создаем виртуальное окружение
 
-   sudo apt install python3.12-venv
+   sudo apt install python3-venv
 
    python3 -m venv env
 
@@ -52,23 +52,10 @@ Wireguard Manager
    sudo systemctl enable wrg_machine
    sudo systemctl start wrg_machine
 
+   sudo systemctl status wrg_machine
+
 3. от имени администратора запускаем скрипты по установке и генерации пользователей
-4. устанавливаем как сервис
 
-Для этого необходимо единоразово выполнить следующую последовательность действий
-
-    sudo cp wireguad_machine.service /lib/systemd/system/wireguad_machine.service
-    sudo systemctl enable wireguad_machine
-    sudo systemctl start wireguad_machine
-
-проверяем что сервис успешно запущен 
-    
-    sudo systemctl status wireguad_machine
-
-остановить-перезапустить сервис
-
-    sudo systemctl stop wireguad_machine
-    sudo systemctl restart wireguad_machine
 
 5. добавляем айпи для доступа
 

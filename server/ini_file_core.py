@@ -85,11 +85,11 @@ class ServerConfig:
     def get_max_peer_network(self):
         for row in self.conf_file.cfg:
             if row.__class__.__name__== "Peer" and getattr(row,"AllowedIPs"):
-
                 if self.max_AllowedIPs:
                     self.max_AllowedIPs = max(ipaddress.ip_network(getattr(row, "AllowedIPs")), self.max_AllowedIPs)
                 else:
                     self.max_AllowedIPs = ipaddress.ip_network(getattr(row,"AllowedIPs"))
+        return self.max_AllowedIPs
 
     def append_peer(self, peer):
         for row in self.conf_file:

@@ -22,6 +22,15 @@ def gen_users(number_clients, cfg_folder, logger):
     else:
         raise Exception("please fill Interface in server config")
 
+    # получаем максимальный айпишник из серверного конфига
+    max_network_on_serv_conf = serv_cfg.get_max_peer_network()
+    if not max_network_on_serv_conf:
+        serv_ip_addr_next = serv_ip_addr + 1
+        max_network_on_serv_conf = str(ipaddress.ip_network(f"{serv_ip_addr_next}/32"))
+    else:
+        serv_ip_addr_next = serv_ip_addr + 1
+        max_network_on_serv_conf = str(ipaddress.ip_network(f"{serv_ip_addr_next}/32"))
+
     for numb in range(clc_clients, clc_clients + number_clients):
         logger.info(f"Клиент № {numb-clc_clients+1} из {number_clients}")
 
@@ -38,10 +47,7 @@ def gen_users(number_clients, cfg_folder, logger):
         client_conf = ClientConfig(client_conf_file_path)
         # client config
         new_client_inter = pydantic.create_model("Interface", __base__=BaseModel)()
-        max_network_on_serv_conf = serv_cfg.get_max_peer_network()
-        if not max_network_on_serv_conf:
-            serv_ip_addr_next = serv_ip_addr + 1
-            max_network_on_serv_conf = str(ipaddress.ip_network(f"{serv_ip_addr_next}/32"))
+
 
         new_client_inter.Address = max_network_on_serv_conf
         new_client_inter.DNS = serv_dns
@@ -61,7 +67,9 @@ def gen_users(number_clients, cfg_folder, logger):
         new_server_peer.AllowedIPs = max_network_on_serv_conf
         serv_cfg.append_peer(new_server_peer)
         serv_cfg.write()
+        # Увеличиваем текущий айпишник на единицу
+        max_network_on_serv_conf
 
-    run("systemctl restart wg-quick@wg0.service")
+    run("systemctl restart wg-quick@wg0")
 
 
