@@ -340,7 +340,7 @@ class SecurityConfig(BaseModel):
     """
 
     @field_validator("whitelist", "blacklist")
-    def validate_ip_lists(cls, v: list[str] | None) -> list[str] | None:
+    def validate_ip_lists(cls, v: Optional[List[str]]) -> list[str] | None:
         """Validate IP addresses and CIDR ranges in whitelist/blacklist."""
         if v is None:
             return None
