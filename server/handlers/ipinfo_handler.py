@@ -2,7 +2,7 @@ import asyncio
 import os
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import aiohttp
 import maxminddb
@@ -11,13 +11,13 @@ import maxminddb
 class IPInfoManager:
     """Handler for IPInfo's IP to Country ASN database"""
 
-    def __init__(self, token: str, db_path: Path | None = None):
+    def __init__(self, token: str, db_path: Optional[Path] = None):
         if not token:
             raise ValueError("IPInfo token is required!")
 
         self.token = token
         self.db_path = db_path or Path("data/ipinfo/country_asn.mmdb")
-        self.reader: maxminddb.Reader | None = None
+        self.reader: Optional[maxminddb.Reader] = None
         self.redis_handler: Any = None
 
     async def initialize(self) -> None:
@@ -87,7 +87,7 @@ class IPInfoManager:
         age = time.time() - self.db_path.stat().st_mtime
         return age > 86400
 
-    def get_country(self, ip: str) -> str | None:
+    def get_country(self, ip: str) -> Optional[str]:
         """Get country code for an IP address"""
         if not self.reader:
             raise RuntimeError("Database not initialized")

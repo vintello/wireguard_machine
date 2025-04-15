@@ -56,7 +56,6 @@ def get_ip_list(type_ip: Type_IP_List):
         results = session.exec(statement)
         for row in results.all():
             ip_list.add(row.ip_addr)
-    print("--", ip_list)
     return [ip for ip in ip_list]
 
 
