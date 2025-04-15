@@ -1,5 +1,5 @@
 import re
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, List, Set
 
 
 class SusPatterns:
@@ -15,9 +15,9 @@ class SusPatterns:
 
     _instance: ClassVar[Optional["SusPatterns"]] = None
 
-    custom_patterns: set[str] = set()
+    custom_patterns: Set[str] = set()
 
-    patterns: list[str] = [
+    patterns: List[str] = [
         # XSS - Enhanced patterns
         r"<script[^>]*>[^<]*<\/script\s*>",  # Basic script tag
         r"javascript:\s*[^\s]+",  # javascript: protocol
@@ -112,8 +112,8 @@ class SusPatterns:
         r"[\r\n]\s*(?:HTTP\/[0-9.]+|Location:|Set-Cookie:)",
     ]
 
-    compiled_patterns: list[re.Pattern]
-    compiled_custom_patterns: set[re.Pattern]
+    compiled_patterns: List[re.Pattern]
+    compiled_custom_patterns: Set[re.Pattern]
     redis_handler: Any = None
 
     def __new__(cls) -> "SusPatterns":
