@@ -359,7 +359,7 @@ class SecurityConfig(BaseModel):
         return validated
 
     @field_validator("block_cloud_providers", mode="before")
-    def validate_cloud_providers(cls, v: Any) -> set[str]:
+    def validate_cloud_providers(cls, v: Any) -> Set[str]:
         valid_providers = {"AWS", "GCP", "Azure"}
         if v is None:
             return set()
