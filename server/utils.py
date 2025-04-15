@@ -2,7 +2,8 @@
 import logging
 import re
 from ipaddress import IPv4Address, ip_network
-from typing import Any
+from typing import Any, Optional
+import subprocess
 
 from fastapi import Request
 
@@ -344,3 +345,22 @@ def get_file_source(file_name):
     with open(file_name, "r") as f:
         source_txt = f.read()
     return source_txt.strip()
+
+def run_system_command(command: str) -> Optional[str]:
+    """Выполняет системную команду и возвращает её вывод.
+    :param command: Системная команда для выполнения.
+    :return: Вывод команды или None, если произошла ошибка.
+    """
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        print(f"Ошибка при выполнении команды '{command}': {e.stderr}")
+        return None

@@ -6,6 +6,7 @@ from os import listdir, path
 from server.utils import get_file_source
 from server.ini_file_core import ServerConfig, ClientConfig, BaseModel
 import pydantic
+import server.utils
 import pathlib
 
 def gen_users(number_clients, cfg_folder, logger:Logger):
@@ -72,7 +73,9 @@ def gen_users(number_clients, cfg_folder, logger:Logger):
         #https://serverfault.com/questions/1101002/wireguard-client-addition-without-restart
         #wg set wg0 peer "K30I8eIxuBL3OA43Xl34x0Tc60wqyDBx4msVm8VLkAE=" allowed-ips 10.101.1.2/32
         #ip -4 route add 10.101.1.2/32 dev wg0
-        run(f'wg set wg0 peer "{client_pub_key}" allowed-ips {max_network_on_serv_conf}', shell=True)
+        #run(f'wg set wg0 peer "{client_pub_key}" allowed-ips {max_network_on_serv_conf}', shell=True)
+        res = server.utils.run_system_command(f'wg set wg0 peer "{client_pub_key}" allowed-ips {max_network_on_serv_conf}')
+        print(res)
         run(f'ip -4 route add {max_network_on_serv_conf} dev wg0', shell=True)
 
         # Увеличиваем текущий айпишник на единицу
