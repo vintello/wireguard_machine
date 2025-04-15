@@ -98,7 +98,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             .split(",")[0]
             .strip()
         )
-        print(client_ip)
         # Excluded paths
         if any(request.url.path.startswith(path) for path in self.config.exclude_paths):
             return await call_next(request)

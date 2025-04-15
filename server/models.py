@@ -9,7 +9,7 @@ from sqlmodel import Field, Session, SQLModel, create_engine, select
 from sqlmodel import Column, Enum, Field
 from sqlalchemy import UniqueConstraint
 
-def enum_values(enum_class: type[enum.Enum]) -> list:
+def enum_values(enum_class) -> list:
     """Get values for enum."""
     return [status.value for status in enum_class]
 
