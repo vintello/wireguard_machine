@@ -29,7 +29,7 @@ def gen_users(number_clients, cfg_folder, logger:Logger):
         serv_ip_addr_next = serv_ip_addr + 1
         max_network_on_serv_conf = str(ipaddress.ip_network(f"{serv_ip_addr_next}/32"))
     else:
-        serv_ip_addr_next = serv_ip_addr + 1
+        serv_ip_addr_next = max_network_on_serv_conf + 1
         max_network_on_serv_conf = str(ipaddress.ip_network(f"{serv_ip_addr_next}/32"))
 
     for numb in range(clc_clients, clc_clients + number_clients):
