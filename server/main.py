@@ -23,6 +23,13 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+
+f_handler = logging.handlers.TimedRotatingFileHandler("server.log", when="D", interval=1, backupCount=5)
+f_handler.setFormatter(formatter)
+logger.addHandler(f_handler)
+middleware_log = logging.getLogger("server.handlers.midleware")
+middleware_log.addHandler(f_handler)
 # loggersql = logging.getLogger('sqlalchemy.engine')
 # loggersql.setLevel(logging.INFO)
 
