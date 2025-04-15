@@ -203,7 +203,7 @@ class SusPatterns:
             instance.patterns = [p for p in instance.patterns if p != pattern]
 
     @classmethod
-    async def get_all_patterns(cls) -> list[str]:
+    async def get_all_patterns(cls) -> List[str]:
         """
         Retrieve all patterns, including
         both default and custom patterns.
@@ -217,7 +217,7 @@ class SusPatterns:
         return instance.patterns + list(instance.custom_patterns)
 
     @classmethod
-    async def get_all_compiled_patterns(cls) -> list[re.Pattern]:
+    async def get_all_compiled_patterns(cls) -> List[re.Pattern]:
         """
         Retrieve all compiled patterns,
         including both default and custom patterns.
