@@ -32,9 +32,8 @@ Wireguard Manager
 
       source env/bin/activate
 
-2. устанавливаем зависимости 
-   
-      
+устанавливаем зависимости 
+
       pip install -r requirements.txt
 
 демонизируем приложение
