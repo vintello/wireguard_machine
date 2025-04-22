@@ -1,4 +1,5 @@
 import logging
+import pathlib
 
 import sqlalchemy.exc
 import uvicorn
@@ -19,6 +20,7 @@ from server.handlers.midleware import SecurityMiddleware
 from server.wireguard_users import gen_users
 from server.utils import get_file_source
 import ipaddress
+import datetime
 
 logging.basicConfig(
     level=logging.INFO,
@@ -319,7 +321,18 @@ def clients_scan(directory="/etc/wireguard/clients"):
 def gen_wireguard_users(number_clients: int = 300):
     # number_clients = 300
     cfg_folder = "/etc/wireguard"
-    gen_users(number_clients, cfg_folder, logger)
+    blk_file_path = "generated.lock"
+    fname = pathlib.Path(blk_file_path)
+    if fname.exists():
+        mtime = datetime.datetime.fromtimestamp(fname.stat().st_mtime, tz=datetime.timezone.utc)
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        how_long = now-mtime
+        if datetime.timedelta(minutes=10) < how_long:
+            gen_users(number_clients, cfg_folder, logger)
+        else:
+            raise HTTPException(status_code=400, detail=f"В текущий момент идет генерация. Повторите попозже (запущено {how_long} назад)")
+    else:
+        gen_users(number_clients, cfg_folder, logger)
     return "success"
 
 

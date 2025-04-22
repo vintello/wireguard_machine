@@ -11,6 +11,14 @@ import pathlib
 
 def gen_users(number_clients, cfg_folder, logger:Logger):
     try:
+        # ставим блокировку на генерацию
+        blk_file_path = "generated.lock"
+        blk_file_path = pathlib.Path(blk_file_path)
+        if blk_file_path.exists():
+            blk_file_path.unlink(missing_ok=True)
+        with open(blk_file_path, 'a'):
+            os.utime(blk_file_path, None)
+
         pathlib.Path(path.join(cfg_folder, "clients")).mkdir(parents=True, exist_ok=True)
         clc_clients = len(listdir(path.join(cfg_folder, "clients")))
         serv_pub = get_file_source(path.join(cfg_folder,"server.pub"))
@@ -85,4 +93,8 @@ def gen_users(number_clients, cfg_folder, logger:Logger):
     except Exception as ex:
         logger.exception("Генерация клиентов закончилась с ошибкой")
         raise ex
+    finally:
+        blk_fl = pathlib.Path(blk_file_path)
+        if blk_fl.exists():
+            blk_fl.unlink(missing_ok=True)
 
