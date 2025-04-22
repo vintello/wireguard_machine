@@ -18,6 +18,7 @@ from server.schemas import ListClients, Client, ListClientsWithTotal
 from server.handlers.midleware import SecurityMiddleware
 from server.wireguard_users import gen_users
 from server.utils import get_file_source
+import ipaddress
 
 logging.basicConfig(
     level=logging.INFO,
@@ -57,7 +58,11 @@ def get_ip_list(type_ip: Type_IP_List):
         statement = select(IPListAccess).where(IPListAccess.type_rec == type_ip)
         results = session.exec(statement)
         for row in results.all():
-            ip_list.add(row.ip_addr)
+            try:
+                if ipaddress.ip_address(row.ip_addr):
+                    ip_list.add(row.ip_addr)
+            except Exception as ex:
+                logger.warning(f"ошибка преобразования в IP - id:'{row.id}' IP:'{row.ip_addr}'")
     return [ip for ip in ip_list]
 
 
