@@ -7,6 +7,7 @@ import os
 from sqlmodel import Session, SQLModel, create_engine, select, column
 from typing import List
 from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks
+from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, FileResponse, Response
 from server.models import SecurityConfig
@@ -16,6 +17,7 @@ from server.schemas import IP_List_Response, IP_List_Query, IP_List_Update, List
 from server.schemas import ListClients, Client, ListClientsWithTotal
 from server.handlers.midleware import SecurityMiddleware
 from server.wireguard_users import gen_users
+from server.utils import get_file_source
 
 logging.basicConfig(
     level=logging.INFO,
@@ -134,7 +136,7 @@ async def favicon():
     return FileResponse("server/static/favicon.ico")
 
 
-@app.get("/get-wire",
+@app.get("/get-wire", response_class=PlainTextResponse,
          tags=["work"],
          description="""Возвращает свободный конфиг и маркирует его как выданный. при следующем запросе выдаст новый
 
@@ -157,7 +159,8 @@ async def get_wire(response: Response):
         file_path = os.path.join(folder_, "used.lock")
         with open(file_path, 'a'):
             os.utime(file_path, None)
-        return FileResponse(path=file_, filename='config.conf')  # , media_type='multipart/form-data')
+        file_cnt = get_file_source(file_)
+        return file_cnt
     else:
         response.status_code = 400
         return {"message": "no_serts_available"}
