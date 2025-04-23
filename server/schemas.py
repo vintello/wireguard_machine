@@ -1,6 +1,6 @@
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from typing import Optional, List
-from pydantic import BaseModel, SerializeAsAny
+from pydantic import BaseModel, SerializeAsAny, computed_field
 
 class IP_List_Response(SQLModel):
     id: Optional[int]
@@ -32,3 +32,28 @@ class ListClientsWithTotal(BaseModel):
     total: Optional[int] = 0
     used: Optional[int] = 0
     free: Optional[int] = 0
+
+class StatisticClient(BaseModel):
+    name: Optional[str]
+    pub_key: str
+    shared_key: str
+    endpoint: str
+    allowed_ips : str
+    latest_handshake: int
+    rx: int
+    tx: int
+    keepalive: int
+
+    @computed_field
+    @property
+    def last_seen(self) -> str:
+        return "gggg"
+
+    @computed_field
+    @property
+    def is_online(self)-> bool:
+        return False
+
+class ListStatisticClient(BaseModel):
+    clients: Optional[List[StatisticClient]] = []
+
