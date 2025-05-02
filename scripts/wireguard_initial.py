@@ -45,13 +45,17 @@ try:
         app_list = ["curl", "libelf-dev", "pkg-config", "build-essential", "git", "dirmngr", "wireguard", "openresolv", "resolvconf"]
         for app in app_list:
             print(f"   -----  {app} -----")
-            run(f"apt install {app}", shell=True)
+            run(f"apt install -y {app}", shell=True)
 
         run("perl -pi -e 's/#{1,}?net.ipv4.ip_forward ?= ?(0|1)/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf", shell=True)
         #if 'y' in ipv6.lower():
         #    run("perl -pi -e 's/#{1,}?net.ipv6.conf.all.forwarding ?= ?(0|1)/net.ipv6.conf.all.forwarding = 1/g' /etc/sysctl.conf", shell=True)
 
         print("\nWireGuard был установлен")
+        print(exists("/etc/wireguard"))
+
+        if not exists("/etc/wireguard"):
+            run("mkdir /etc/wireguard", shell=True)
 
         run("umask 077 /etc/wireguard/", shell=True)
 

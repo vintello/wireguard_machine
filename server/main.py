@@ -1,16 +1,19 @@
 import logging
 import pathlib
+from contextlib import asynccontextmanager
 
 import sqlalchemy.exc
 import uvicorn
 import bcrypt
 import os
+from typing import Optional
 from sqlmodel import Session, SQLModel, create_engine, select, column
 from typing import List
 from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, FileResponse, Response
+from fastapi_utils.tasks import repeat_every
 from server.models import SecurityConfig
 from server.models import Type_IP_List, IPListAccess
 from server.schemas import IP_List_Response, IP_List_Query, IP_List_Update, List_IP_List_Update, \
@@ -18,7 +21,10 @@ from server.schemas import IP_List_Response, IP_List_Query, IP_List_Update, List
 from server.schemas import ListClients, Client, ListClientsWithTotal
 from server.handlers.midleware import SecurityMiddleware
 from server.wireguard_users import gen_users
-from server.utils import get_file_source
+from server.utils import get_file_source, run_system_command, get_ip_next_server_config
+from server.utils import remove_client
+from server.user_statistics import status
+from server.ini_file_core import clients_scan, ServerConfig, ClientConfig
 import ipaddress
 import datetime
 
@@ -68,6 +74,46 @@ def get_ip_list(type_ip: Type_IP_List):
     return [ip for ip in ip_list]
 
 
+@repeat_every(seconds=60)
+async def remove_expired_tokens_task():
+    '''
+    Удаляем токены которые не использовались более 10 минут
+    :return:'''
+    wg0_file = '/etc/wireguard/wg0.conf'
+    wg_iface = 'wg0'  # wireguard interface
+    status_list = status(logger, wg_iface, wg0_file)
+    srv_cfg_file = ServerConfig(wg0_file)
+
+    for client in status_list.clients:
+        if not client.is_online:
+            pub_key = client.pub_key
+            client_folder = os.path.join("/etc/wireguard/clients", client.name) if client.name else None
+            if client_folder and os.path.exists(client_folder):
+                lock_file = None
+                for file in os.listdir(client_folder):
+                    if file.endswith(".lock"):
+                        lock_file = os.path.join(client_folder, file)
+
+                if lock_file:
+                    logger.info(f"АВТОЧИСТКА. Файл блокировки {lock_file} существует. Конфиг {client.name} не удален")
+                    continue
+                else:
+                    remove_client(client, logger=logger, srv_cfg_file=srv_cfg_file)
+                    logger.info(f"АВТОЧИСТКА. Конфиг {client.name} удален")
+            else:
+                logger.info(f"АВТОЧИСТКА. Конфиг для {pub_key} не найден")
+                remove_client(client, logger=logger, srv_cfg_file=srv_cfg_file)
+                logger.info(f"АВТОЧИСТКА. {pub_key} с сервера удален")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # create remove task by scheduller
+    await remove_expired_tokens_task()
+    yield
+    # do any on finish
+
+
 description = """
 работа с конфигами клиентов для Wireguard сервера. 🚀
 
@@ -95,11 +141,11 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan
     # swagger_favicon_url="/favicon.ico"
 )
 app.state.whitelist_list = get_ip_list(Type_IP_List.whitelist)
 app.mount("/static", StaticFiles(directory="server/static"), name="static")
-# print(app.state.whitelist_list)
 
 config = SecurityConfig(
     # Whitelist/Blacklist
@@ -155,6 +201,21 @@ async def favicon():
          name="Получить свободный конфиг"
          )
 async def get_wire(response: Response):
+    new_user_cfg = gen_wireguard_users(number_clients=1)
+    file_cnt = None
+    # print(new_user_cfg)
+    if new_user_cfg:
+        cfg_file_ = new_user_cfg[0]
+        # print(cfg_file_)
+        file_cnt = get_file_source(cfg_file_)
+    if file_cnt:
+        return file_cnt
+    else:
+        response.status_code = 400
+        return {"message": "no_serts_available"}
+
+
+async def get_wire_old(response: Response):
     file_ = None
     data = clients_scan()
     for row in data.clients:
@@ -292,48 +353,85 @@ def free_for_use_wireguard_user_configs(background_tasks: BackgroundTasks):
     return selected_clients
 
 
-def clients_scan(directory="/etc/wireguard/clients"):
-    list_clients = ListClients()
-    tree = list(os.walk(directory))
-    for row in tree:
-        if row[0] == directory:
-            pass
-        else:
-            subdirname = row[0].split("/")[-1]
-            client = Client(name=subdirname)
-            files_list = [os.path.splitext(file_) for file_ in row[2]]
-            for file_ in files_list:
-                if ".conf" in file_[1]:
-                    client.cfg_file = os.path.join(row[0], file_[0] + file_[1])
-                if ".lock" in file_[1]:
-                    client.used = True
-            list_clients.clients.append(client)
-
-    return list_clients
-
-
-@app.get("/gen_clients/",
-         # response_model=ListClientsWithTotal,
-         tags=["wireguard"],
-         description="Генерируем необходимое количество клиентов. Если клиенты ранее существовали то будет добавлено указанное количество",
-         name="Генерация клиентов"
-         )
+# оставляю на всякий случай
+# @app.get("/gen_clients/",
+#         # response_model=ListClientsWithTotal,
+#         tags=["wireguard"],
+#         description="Генерируем необходимое количество клиентов. Если клиенты ранее существовали то будет добавлено указанное количество",
+#         name="Генерация клиентов",
+#         include_in_schema=False
+#         )
 def gen_wireguard_users(number_clients: int = 300):
     # number_clients = 300
     cfg_folder = "/etc/wireguard"
     blk_file_path = "generated.lock"
     fname = pathlib.Path(blk_file_path)
+    new_user_list = []
     if fname.exists():
         mtime = datetime.datetime.fromtimestamp(fname.stat().st_mtime, tz=datetime.timezone.utc)
         now = datetime.datetime.now(tz=datetime.timezone.utc)
-        how_long = now-mtime
+        how_long = now - mtime
         if datetime.timedelta(minutes=10) < how_long:
-            gen_users(number_clients, cfg_folder, logger)
+            new_user_list = gen_users(number_clients, cfg_folder, logger)
         else:
-            raise HTTPException(status_code=400, detail=f"В текущий момент идет генерация. Повторите попозже (запущено {how_long} назад)")
+            raise HTTPException(status_code=400,
+                                detail=f"В текущий момент идет генерация. Повторите попозже (запущено {how_long} назад)")
     else:
-        gen_users(number_clients, cfg_folder, logger)
-    return "success"
+        new_user_list = gen_users(number_clients, cfg_folder, logger)
+    return new_user_list
+
+
+@app.get("/wireguard_user_status",
+         tags=["wireguard"],
+         description="Возвращает статус всех клиентов Wireguard. аналогично wg show",
+         name="Получить статус всех клиентов Wireguard", )
+def wireguard_user_status():
+    wg0_file = '/etc/wireguard/wg0.conf'  # wireguard config file
+    wg_iface = 'wg0'  # wireguard interface
+    status_list = status(logger, wg_iface, wg0_file)
+    return status_list
+
+
+@app.delete("/del_all_cfg",
+            tags=["wireguard"],
+            description="""Удаляет все конфигурационные файлы клиентов, которые не используются в данный момент, 
+         и также чистит wg0.cfg сервера. 
+         Если в папке есть файл .lock то такой конфиг не удаяется в автоматическом режиме. зайдите на сервер с правами администратора и удалите файл .lock""",
+            name="Удаление ВСЕХ конфигов клиентов и пользователей в Wireguard", )
+def del_all_cfg():
+    wg0_file = '/etc/wireguard/wg0.conf'
+    wg_iface = 'wg0'  # wireguard interface
+    logger.info("Удаляем все конфиги клиентов")
+    status_list = status(logger, wg_iface, wg0_file)
+    client_removed_list = []
+    srv_cfg_file = ServerConfig(wg0_file)
+
+    for row in status_list.clients:
+        pub_key = row.pub_key
+        client_folder = os.path.join("/etc/wireguard/clients", row.name) if row.name else None
+        if client_folder and os.path.exists(client_folder):
+            lock_file = None
+            for file in os.listdir(client_folder):
+                if file.endswith(".lock"):
+                    lock_file = os.path.join(client_folder, file)
+
+            if lock_file:
+                logger.info(f"Файл блокировки {lock_file} существует. Конфиг {row.name} не удален")
+                client_removed_list.append({"name": row.name, "pub_key": pub_key, "status": "lock_file"})
+                continue
+            else:
+                remove_client(row, logger=logger, srv_cfg_file=srv_cfg_file)
+                client_removed_list.append({"name": row.name, "pub_key": pub_key, "status": "deleted"})
+                logger.info(f"Конфиг {row.name} удален")
+        else:
+            logger.info(f"Конфиг для {pub_key} не найден")
+            remove_client(row, logger=logger, srv_cfg_file=srv_cfg_file)
+            client_removed_list.append({"name": row.name, "pub_key": pub_key, "status": "deleted"})
+            logger.info(f"{pub_key} с сервера удален")
+
+    srv_cfg_file.write()
+
+    return client_removed_list
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ database.db
 # Distribution / packaging
 .Python
 .venv
+.vscode/
 env/
 build/
 develop-eggs/

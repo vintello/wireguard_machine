@@ -7,12 +7,14 @@ from ipaddress import IPv4Address, ip_network
 from typing import Any, Optional, Union
 import subprocess
 import math
+import datetime
 
 from fastapi import Request
 
 from server.models import SecurityConfig
 from server.handlers.ipinfo_handler import IPInfoManager
 from server.handlers.sus_patterns import SusPatterns
+
 
 async def setup_custom_logging(log_file: str) -> logging.Logger:
     """
@@ -370,3 +372,50 @@ def convert_size(size_bytes):
     p = math.pow(1024, i)
     s = round(size_bytes / p, 2)
     return "%s %s" % (s, size_name[i])
+
+def since1(date):
+    now = datetime.datetime.now()
+    then = datetime.datetime.fromtimestamp(int(date))
+    duration = now - then
+    return duration
+
+def get_ip_next_server_config(srv_cfg_file):
+    #srv_cfg_file = ServerConfig(wg0_file)
+    free_ip = None
+
+    srv_ip = IPv4Address(srv_cfg_file.get_serv_ip())
+    srv_network = srv_cfg_file.get_serv_network()
+    list_srv_ip_network = list(srv_network.hosts())
+
+    all_clients_ips = srv_cfg_file.get_all_clients_ips()
+    all_excluded_ips = set(all_clients_ips)
+    all_excluded_ips.add(srv_ip)
+
+    for excl_ip in all_excluded_ips:
+        list_srv_ip_network.remove(excl_ip)
+    if len(list_srv_ip_network) == 0:
+        raise Exception("no free IPs")
+    else:
+        free_ip = list_srv_ip_network[0]
+    return free_ip
+
+def remove_client(client, logger:logging.Logger, srv_cfg_file):
+    logger.info(f"Удаляем конфиг клиента: \n{client}")
+    pub_key = client.pub_key
+    client_folder = os.path.join("/etc/wireguard/clients", client.name) if client.name else None
+    if client_folder and os.path.exists(client_folder):
+        # удаляем папку с конфигами клиента
+        pth = pathlib.Path(client_folder)
+        for sub in pth.iterdir():
+            if sub.is_file():
+                sub.unlink()
+        pth.rmdir()
+
+    srv_cfg_file.delete_peer(client)
+    # удаляем динамически в wireguard
+    #wg set wg0 peer "K30I8eIxuBL3OA43Xl34x0Tc60wqyDBx4msVm8VLkAE=" remove
+    #ip -4 route delete 10.101.1.2/32 dev wg0
+    run_system_command(f'wg set wg0 peer "{pub_key}" remove')
+    run_system_command(f'ip -4 route delete {client.allowed_ips} dev wg0')
+
+

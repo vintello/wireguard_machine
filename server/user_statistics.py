@@ -6,39 +6,46 @@ import argparse
 from datetime import datetime
 from operator import attrgetter
 from server.schemas import StatisticClient, ListStatisticClient
-from server.ini_file_core import ServerConfig
+from server.ini_file_core import ServerConfig, clients_scan
+import logging
 
-wg0_file = '/etc/wireguard/wg0.conf'  # wireguard config file
-wg_iface = 'wg0'  # wireguard interface
-sg_to_timeout = 300  # seconds needed to pass for consider client is disconnected
 
-def status():
-    # read wg config return {"client1": pub_key}
-    #clients = read_wg0(wg0_file)
-    srv_cfg_file = ServerConfig(wg0_file)
+def status(loger: logging.Logger, wg_iface: str, wg0_file: str) -> ListStatisticClient:
+    loger.info("Получаем статус клиентов")
+    clients_cfgs = clients_scan()
     status_list = []
-    stats = subprocess.run(['sudo', 'wg', 'show', wg_iface, 'dump'], stdout=subprocess.PIPE).stdout.decode('utf-8')
-
+    stats = subprocess.run(['sudo', 'wg', 'show', wg_iface, 'dump'], capture_output=True)
+    if stats.returncode != 0:
+        loger.error(f"Error running wg show: {stats.stderr.decode()}")
+        return status_list
+    stats = stats.stdout.decode()
+    loger.info(stats)
     stats = stats.split('\n')
+
+    # remove first line
     stats.pop(0)
     stats.pop(len(stats) - 1)
-
+    client_list = ListStatisticClient()
     for line in stats:
         row = line.split('\t')
+        curr_client = None
+        for client in clients_cfgs.clients:
+            if row[0] == client.pub_key:
+                curr_client = client
+                break
         client_ = StatisticClient.model_validate({"pub_key": row[0],
-                                   "shared_key": row[1],
-                                   "endpoint": row[2],
-                                   "allowed_ips": row[3],
-                                   "latest_handshake": int(row[4]),
-                                   "rx": int(row[5]),
-                                   "tx": int(row[6]),
-                                   "keepalive": int(row[7])}
-                                  )
-        for client in clients:
-            if client_.pub_key == clients[client]:
-                client_.name = client
-        status_list.append(client_)
+                                                  "shared_key": row[1],
+                                                  "endpoint": row[2],
+                                                  "allowed_ips": row[3],
+                                                  "latest_handshake": int(row[4]),
+                                                  "rx": int(row[5]),
+                                                  "tx": int(row[6]),
+                                                  "keepalive": int(row[7]) if row[7] != 'off' else 0,
+                                                  "name": None if curr_client is None else curr_client.name,
 
-    # order client list based on last_handshake
-    status_list.sort(key=attrgetter('latest_handshake'), reverse=False)
-    return status_list
+                                                  }
+                                                 )
+        client_list.clients.append(client_)
+
+    loger.info(f"Получено {len(client_list.clients)} клиентов")
+    return client_list

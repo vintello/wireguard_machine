@@ -56,3 +56,5 @@ Wireguard Manager
 # Заметки
    после добавления пользователей через вэб интерфейс перезагружать сервер не нужно, - добавляются в Wireguard динамически.
    после перезагрузки данные в Wireguard считываются из конфигурационных файлов и применяются
+
+   export PYTHONPATH="${PYTHONPATH}:/home/vintello/Documents/wireguard_machine'
