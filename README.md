@@ -58,3 +58,16 @@ Wireguard Manager
    после перезагрузки данные в Wireguard считываются из конфигурационных файлов и применяются
 
    export PYTHONPATH="${PYTHONPATH}:/home/vintello/Documents/wireguard_machine'
+
+## если нет установленного > python 3.10
+
+1 устанавливаем python 3.10
+
+      sudo apt install software-properties-common -y
+      sudo add-apt-repository ppa:deadsnakes/ppa
+      sudo apt update
+      sudo apt install python3.10
+
+2. создаем виртуальное окружение и в дальнейшем используем его
+   
+      
