@@ -179,7 +179,7 @@ def index():
     return RedirectResponse("/docs")
 
 
-@app.get("/ping", tags=["work"])
+#@app.get("/ping", tags=["work"])
 def ping_pong():
     return "pong"
 

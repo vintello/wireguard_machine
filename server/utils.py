@@ -392,7 +392,11 @@ def get_ip_next_server_config(srv_cfg_file):
     all_excluded_ips.add(srv_ip)
 
     for excl_ip in all_excluded_ips:
-        list_srv_ip_network.remove(excl_ip)
+        try:
+            list_srv_ip_network.remove(excl_ip)
+        except Exception as ex:
+            logging.exception(f"при попытке удалить {excl_ip}: \n")
+
     if len(list_srv_ip_network) == 0:
         raise Exception("no free IPs")
     else:
