@@ -193,7 +193,7 @@ def index(request: Request):
 def ping_pong():
     return "pong"
 
-@app.get("/access", response_class=HTMLResponse)
+@app.get("/access", response_class=HTMLResponse, include_in_schema=False)
 async def read_item(request: Request):
     return templates.TemplateResponse(
         request=request,
@@ -440,9 +440,11 @@ def wireguard_user_status():
     wg0_file = '/etc/wireguard/wg0.conf'  # wireguard config file
     wg_iface = 'wg0'  # wireguard interface
     status_list = status(logger, wg_iface, wg0_file)
+    if not status_list:
+        status_list = {"clients":[]}
     return status_list
 
-@app.get("/wireguard_user_status_blank")
+@app.get("/wireguard_user_status_blank", include_in_schema=False)
 def templ_user_status():
     data = {
       "clients": [

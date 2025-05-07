@@ -5,7 +5,8 @@ var table = new DataTable('#status_table', {
     order: [[1, 'desc']],
     stateSave: true,
     ajax: {
-        url: '/wireguard_user_status_blank',
+        //url: '/wireguard_user_status_blank',
+        url: '/wireguard_user_status',
         type: 'GET',
         dataSrc: 'clients'
     },
