@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link href="https://cdn.datatables.net/2.3.0/css/dataTables.dataTables.css" rel="stylesheet" crossorigin="anonymous"> -->
+      <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css" rel="stylesheet">
+      <link href="https://cdn.datatables.net/2.3.0/css/dataTables.bootstrap4.css" rel="stylesheet">
+      <link href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.css" rel="stylesheet">
+      <link href="https://cdn.datatables.net/2.3.0/css/dataTables.dataTables.css" rel="stylesheet">
+      <link href="https://cdn.datatables.net/select/3.0.0/css/select.bootstrap4.min.css" rel="stylesheet">
+      <link href="https://cdn.datatables.net/buttons/3.2.3/css/buttons.dataTables.css" rel="stylesheet">
+      <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.css">
+
+    <title>Статистика</title>
+  </head>
+  <body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <a class="navbar-brand" href="#">Wireguard Manager</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item">
+        <a class="nav-link active" href="/">Статистика <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item" >
+          <a class="nav-link" href="/access"> Доступ</a>
+      </li>
+        <li class="nav-item">
+        <a class="nav-link" href="/docs" target="_blank">API</a>
+      </li>
+
+    </ul>
+
+  </div>
+</nav>
+    <h1>Статус клиентов</h1>
+    <div class="card" style="width: 98%; margin: auto;">
+        <div class="card-body">
+            <table id="status_table" class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>name</th>
+                        <th>pub_key</th>
+                        <th>allowed_ips</th>
+                        <th>rx</th>
+                        <th>tx</th>
+                        <th>last_seen</th>
+                        <th>is_online</th>
+                        <th>latest_handshake_dt</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Optional JavaScript; choose one of the two! -->
+    <!--<script src="https://code.jquery.com/jquery-3.7.1.js" crossorigin="anonymous"></script> -->
+    <!-- Option 1: Bootstrap Bundle with Popper -->
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.datatables.net/2.3.0/js/dataTables.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/2.3.0/js/dataTables.bootstrap5.js" crossorigin="anonymous"></script>
+     -->
+  <script src="https://code.jquery.com/jquery-3.7.1.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/all.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.datatables.net/2.3.0/js/dataTables.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.datatables.net/2.3.0/js/dataTables.bootstrap4.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.datatables.net/buttons/3.2.3/js/dataTables.buttons.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.datatables.net/buttons/3.2.3/js/buttons.dataTables.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.datatables.net/select/3.0.0/js/dataTables.select.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/3.2.3/js/buttons.colVis.min.js"></script>
+
+  <script src="{{ url_for('static', path='/jquery.mask.js') }}" crossorigin="anonymous"></script>
+  <script src="{{ url_for('static', path='/status_users.js') }}" crossorigin="anonymous"></script>
+  </body>
+</html>

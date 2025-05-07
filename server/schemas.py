@@ -9,6 +9,14 @@ class IP_List_Response(SQLModel):
     id: Optional[int]
     ip_addr: Optional[str]
 
+class AccessListResponse(BaseModel):
+    #draw: int
+    #current_page: int
+    #per_page: int
+    #recordsTotal: int
+    #recordsFiltered: int
+    data: Optional[List[IP_List_Response]] = []
+
 
 class IP_List_Query(SQLModel):
     id: Optional[int] = None

@@ -6,19 +6,23 @@ import sqlalchemy.exc
 import uvicorn
 import bcrypt
 import os
+import csv
+import io
 from typing import Optional
 from sqlmodel import Session, SQLModel, create_engine, select, column
 from typing import List
-from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks
+from fastapi import Depends, FastAPI, HTTPException, BackgroundTasks, Request, UploadFile
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, FileResponse, Response
 from fastapi_utils.tasks import repeat_every
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 from server.models import SecurityConfig
 from server.models import Type_IP_List, IPListAccess
 from server.schemas import IP_List_Response, IP_List_Query, IP_List_Update, List_IP_List_Update, \
     List_IP_List_Update_response
-from server.schemas import ListClients, Client, ListClientsWithTotal
+from server.schemas import ListClients, Client, ListClientsWithTotal, AccessListResponse
 from server.handlers.midleware import SecurityMiddleware
 from server.wireguard_users import gen_users
 from server.utils import get_file_source, run_system_command, get_ip_next_server_config
@@ -27,6 +31,7 @@ from server.user_statistics import status
 from server.ini_file_core import clients_scan, ServerConfig, ClientConfig
 import ipaddress
 import datetime
+from sqlalchemy import func
 
 logging.basicConfig(
     level=logging.INFO,
@@ -146,6 +151,7 @@ app = FastAPI(
 )
 app.state.whitelist_list = get_ip_list(Type_IP_List.whitelist)
 app.mount("/static", StaticFiles(directory="server/static"), name="static")
+templates = Jinja2Templates(directory="server/templates")
 
 config = SecurityConfig(
     # Whitelist/Blacklist
@@ -175,13 +181,24 @@ app.add_middleware(SecurityMiddleware, config=config)
 
 
 @app.get("/", include_in_schema=False)
-def index():
-    return RedirectResponse("/docs")
+def index(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="statistic.html",
+    )
+    #return RedirectResponse("/docs")
 
 
 #@app.get("/ping", tags=["work"])
 def ping_pong():
     return "pong"
+
+@app.get("/access", response_class=HTMLResponse)
+async def read_item(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="access_list.html",
+    )
 
 
 @app.get('/favicon.ico', include_in_schema=False)
@@ -235,22 +252,53 @@ async def get_wire_old(response: Response):
 
 
 @app.get("/whitelist",
-         response_model=List[IP_List_Response],
+         response_model=AccessListResponse,
          tags=["access"],
          description="Полный список всех разрешенных IP для доступа к сервису.",
          name="Получить список IP адресов и их Id"
          )
-async def list_whitelist(params: IP_List_Query = Depends()):
+async def list_whitelist(request: Request, params: IP_List_Query = Depends()):
+
+    draw = request.query_params.get('draw', 1)
+    search = request.query_params.get("search[value]", False)
+    length_ = int(request.query_params.get('length', 300))
+    start = int(request.query_params.get('start', 0))
+    page = int((length_ + start) / length_)
     with Session(engine) as session:
         statement = select(IPListAccess).where(IPListAccess.type_rec == Type_IP_List.whitelist)
         if params.ip_addr:
             statement = statement.where(column("ip_addr").ilike(f"%{params.ip_addr}%"))
         if params.id:
             statement = statement.where(IPListAccess.id == params.id)
-        # print(statement.compile(compile_kwargs={"literal_binds": True}))
         heroes = session.exec(statement).all()
-        return heroes
+    resp = AccessListResponse(
+        data=heroes
+    )
+    return resp
 
+@app.post("/whitelist_file",
+          tags=["access"],
+          description="на вход можно загрузить список IP адресов для добавления CSV формате.",
+          name="Добавление IP адресов"
+          )
+def whitelist_upload_file(file: UploadFile):
+    result = []
+    tt= file.file.read().decode('utf-8')
+    reader_obj = csv.reader(io.StringIO(tt), delimiter=",")
+    with Session(engine) as session:
+        for row in reader_obj:
+            print(row[0])
+            new_data= dict()
+            new_data["ip_addr"] = row[0]
+            new_data["type_rec"] = Type_IP_List.whitelist
+            rec = IPListAccess(**new_data)
+            session.add(rec)
+            session.commit()
+            session.flush(rec)
+            fill_resp = IP_List_Response(**{"id": rec.id, "ip_addr": rec.ip_addr})
+            result.append(fill_resp)
+    resp = List_IP_List_Update_response(items=result)
+    return resp
 
 @app.post("/whitelist",
           response_model=List_IP_List_Update_response,
@@ -315,7 +363,10 @@ def delete_from_whitelist(id: int):
             raise HTTPException(status_code=404, detail=f"Record {id} not found")
         session.delete(rec)
         session.commit()
-        config.whitelist.remove(rec.ip_addr)
+        try:
+            config.whitelist.remove(rec.ip_addr)
+        except Exception as ex:
+            logger.exception(f"при удалении из списка доступа {rec.ip_addr}")
     return {"status": "success"}
 
 
@@ -391,6 +442,27 @@ def wireguard_user_status():
     status_list = status(logger, wg_iface, wg0_file)
     return status_list
 
+@app.get("/wireguard_user_status_blank")
+def templ_user_status():
+    data = {
+      "clients": [
+        {
+          "name": "client_1d7dc416-2db9-4b3d-b36b-2466eea1ea39",
+          "pub_key": "fobvYFJQWEF5D3aiFxjv77Q5jgdCAVcT5bFpqSbKO10=",
+          "shared_key": "(none)",
+          "endpoint": "(none)",
+          "allowed_ips": "10.9.0.2/32",
+          "latest_handshake": 0,
+          "rx": 0,
+          "tx": 0,
+          "keepalive": 0,
+          "last_seen": "never",
+          "is_online": False,
+          "latest_handshake_dt": ""
+        }
+      ]
+    }
+    return data
 
 @app.delete("/del_all_cfg",
             tags=["wireguard"],
