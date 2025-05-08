@@ -80,7 +80,7 @@ def get_ip_list(type_ip: Type_IP_List):
 
 
 @repeat_every(seconds=60)
-async def remove_expired_tokens_task(created_but_not_used_minutes=10):
+async def remove_expired_tokens_task(created_but_not_used_minutes=5):
     '''
     Удаляем токены которые не использовались более 10 минут
     created_but_not_used_minutes  - время в минутах
