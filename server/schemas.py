@@ -37,6 +37,7 @@ class List_IP_List_Update_response(SQLModel):
 
 class Client(BaseModel):
     name: str
+    conf_created: Optional[datetime.datetime] = None
     used: Optional[bool] = False
     cfg_file: Optional[str] = None
     path_to_cfg: Optional[str] = None
@@ -64,6 +65,8 @@ class StatisticClient(BaseModel):
     rx: int
     tx: int
     keepalive: int
+    conf_created: Optional[datetime.datetime] = None
+    used: Optional[bool] = False
 
     @computed_field
     @property

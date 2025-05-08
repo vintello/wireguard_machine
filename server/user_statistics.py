@@ -42,6 +42,8 @@ def status(loger: logging.Logger, wg_iface: str, wg0_file: str) -> ListStatistic
                                                   "tx": int(row[6]),
                                                   "keepalive": int(row[7]) if row[7] != 'off' else 0,
                                                   "name": None if curr_client is None else curr_client.name,
+                                                  "conf_created": None if curr_client is None else curr_client.conf_created,
+                                                  "used": None if curr_client is None else curr_client.used,
 
                                                   }
                                                  )

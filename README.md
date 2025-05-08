@@ -3,6 +3,42 @@
 Wireguard Manager
 
 # Установка
+
+устанавливаем системные пакеты
+
+      sudo apt update
+      sudo apt-get install python3-virtualenv
+      sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev
+
+проверяем версию python
+      
+      python3 --version
+
+для работы приложения нужна версия 3.10+
+
+если версия ниже производим добавление необходимой версии
+
+      sudo apt install software-properties-common -y
+      sudo add-apt-repository ppa:deadsnakes/ppa
+      sudo apt update
+      sudo apt install python3.10
+
+проверяем что python установился корректно
+
+      python3.10 --version
+
+если выдало что команда не найдена то устанавливаем из исходников
+
+      sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev
+      wget https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz
+      tar -xf Python-3.10.*.tgz
+      cd Python-3.10.*/
+      ./configure --enable-optimizations
+      make -j 4
+      sudo make altinstall
+
+!!!! если устанавливали версию python 3.10 то на шаге "создаем виртуальное окружение" python3 заменяем на python3.10 !!!!
+
 создаем пользователя
 
       sudo adduser wmuser
@@ -25,7 +61,6 @@ Wireguard Manager
 
 создаем виртуальное окружение
 
-      sudo apt install python3-venv
       python3 -m venv env
 
 активируем виртуальное окружение 
@@ -39,7 +74,7 @@ Wireguard Manager
 демонизируем приложение
 
       cp wireguad_machine.service wrg_machine.service
-      nano wrg_machine.service -- если нужно что-то исправить 
+      nano wrg_machine.service -- если нужно что-то исправить то делаем здесь
       sudo cp wrg_machine.service  /etc/systemd/system/wrg_machine.service
       sudo systemctl enable wrg_machine
       sudo systemctl start wrg_machine
@@ -47,10 +82,12 @@ Wireguard Manager
       sudo systemctl status wrg_machine
 
 3. от имени администратора запускаем скрипты по установке 
-
-
+      
       cd scripts
+
       sudo python3 wireguard_initial.py
+
+далее переходим в вэбинтрефейс и пользуемся 
 
 
 # Заметки
@@ -59,15 +96,6 @@ Wireguard Manager
 
    export PYTHONPATH="${PYTHONPATH}:/home/vintello/Documents/wireguard_machine'
 
-## если нет установленного > python 3.10
 
-1 устанавливаем python 3.10
-
-      sudo apt install software-properties-common -y
-      sudo add-apt-repository ppa:deadsnakes/ppa
-      sudo apt update
-      sudo apt install python3.10
-
-2. создаем виртуальное окружение и в дальнейшем используем его
    
       

@@ -80,12 +80,14 @@ def get_ip_list(type_ip: Type_IP_List):
 
 
 @repeat_every(seconds=60)
-async def remove_expired_tokens_task():
+async def remove_expired_tokens_task(created_but_not_used_minutes=10):
     '''
     Удаляем токены которые не использовались более 10 минут
+    created_but_not_used_minutes  - время в минутах
     :return:'''
     wg0_file = '/etc/wireguard/wg0.conf'
     wg_iface = 'wg0'  # wireguard interface
+
     status_list = status(logger, wg_iface, wg0_file)
     srv_cfg_file = ServerConfig(wg0_file)
 
@@ -94,6 +96,7 @@ async def remove_expired_tokens_task():
             pub_key = client.pub_key
             client_folder = os.path.join("/etc/wireguard/clients", client.name) if client.name else None
             if client_folder and os.path.exists(client_folder):
+                # проверяем есть ли файл блокировки
                 lock_file = None
                 for file in os.listdir(client_folder):
                     if file.endswith(".lock"):
@@ -102,10 +105,25 @@ async def remove_expired_tokens_task():
                 if lock_file:
                     logger.info(f"АВТОЧИСТКА. Файл блокировки {lock_file} существует. Конфиг {client.name} не удален")
                     continue
-                else:
-                    remove_client(client, logger=logger, srv_cfg_file=srv_cfg_file)
-                    logger.info(f"АВТОЧИСТКА. Конфиг {client.name} удален")
+                # проверяем дату создания конфигурации. если не прошло 10 минут то не удаляем
+                if client.conf_created:
+                    logger.info(f"АВТОЧИСТКА. Конфиг {client.name} был создан {client.conf_created}")
+                    ff = datetime.datetime.now() - datetime.timedelta(minutes=created_but_not_used_minutes)
+                    logger.info(f"АВТОЧИСТКА. Конфиг {client.name} был создан ---- {client.conf_created} - {ff}")
+                    if client.conf_created < datetime.datetime.now() - datetime.timedelta(
+                            minutes=created_but_not_used_minutes):
+                        logger.info(
+                            f"АВТОЧИСТКА. Конфиг {client.name} был создан но не использовался более {created_but_not_used_minutes} минут")
+
+                    else:
+                        logger.info(
+                            f"АВТОЧИСТКА. Конфиг {client.name} был создан но не истек срок {created_but_not_used_minutes} минут")
+                        continue
+
+                remove_client(client, logger=logger, srv_cfg_file=srv_cfg_file)
+                logger.info(f"АВТОЧИСТКА. Конфиг {client.name} удален")
             else:
+
                 logger.info(f"АВТОЧИСТКА. Конфиг для {pub_key} не найден")
                 remove_client(client, logger=logger, srv_cfg_file=srv_cfg_file)
                 logger.info(f"АВТОЧИСТКА. {pub_key} с сервера удален")
@@ -186,12 +204,13 @@ def index(request: Request):
         request=request,
         name="statistic.html",
     )
-    #return RedirectResponse("/docs")
+    # return RedirectResponse("/docs")
 
 
-#@app.get("/ping", tags=["work"])
+# @app.get("/ping", tags=["work"])
 def ping_pong():
     return "pong"
+
 
 @app.get("/access", response_class=HTMLResponse, include_in_schema=False)
 async def read_item(request: Request):
@@ -258,7 +277,6 @@ async def get_wire_old(response: Response):
          name="Получить список IP адресов и их Id"
          )
 async def list_whitelist(request: Request, params: IP_List_Query = Depends()):
-
     draw = request.query_params.get('draw', 1)
     search = request.query_params.get("search[value]", False)
     length_ = int(request.query_params.get('length', 300))
@@ -276,6 +294,7 @@ async def list_whitelist(request: Request, params: IP_List_Query = Depends()):
     )
     return resp
 
+
 @app.post("/whitelist_file",
           tags=["access"],
           description="на вход можно загрузить список IP адресов для добавления CSV формате.",
@@ -283,12 +302,12 @@ async def list_whitelist(request: Request, params: IP_List_Query = Depends()):
           )
 def whitelist_upload_file(file: UploadFile):
     result = []
-    tt= file.file.read().decode('utf-8')
+    tt = file.file.read().decode('utf-8')
     reader_obj = csv.reader(io.StringIO(tt), delimiter=",")
     with Session(engine) as session:
         for row in reader_obj:
             print(row[0])
-            new_data= dict()
+            new_data = dict()
             new_data["ip_addr"] = row[0]
             new_data["type_rec"] = Type_IP_List.whitelist
             rec = IPListAccess(**new_data)
@@ -299,6 +318,7 @@ def whitelist_upload_file(file: UploadFile):
             result.append(fill_resp)
     resp = List_IP_List_Update_response(items=result)
     return resp
+
 
 @app.post("/whitelist",
           response_model=List_IP_List_Update_response,
@@ -441,30 +461,43 @@ def wireguard_user_status():
     wg_iface = 'wg0'  # wireguard interface
     status_list = status(logger, wg_iface, wg0_file)
     if not status_list:
-        status_list = {"clients":[]}
+        status_list = {"clients": []}
     return status_list
 
-@app.get("/wireguard_user_status_blank", include_in_schema=False)
-def templ_user_status():
-    data = {
-      "clients": [
-        {
-          "name": "client_1d7dc416-2db9-4b3d-b36b-2466eea1ea39",
-          "pub_key": "fobvYFJQWEF5D3aiFxjv77Q5jgdCAVcT5bFpqSbKO10=",
-          "shared_key": "(none)",
-          "endpoint": "(none)",
-          "allowed_ips": "10.9.0.2/32",
-          "latest_handshake": 0,
-          "rx": 0,
-          "tx": 0,
-          "keepalive": 0,
-          "last_seen": "never",
-          "is_online": False,
-          "latest_handshake_dt": ""
-        }
-      ]
-    }
-    return data
+
+@app.put("/wireguard_config_not_removed_flg",
+         tags=["wireguard"],
+         description="устанавливает флаг на конфиге клиента, что он не удаляемый в автоматическом режиме.",
+         name="Установить - снять флаг неудаляемости на конфиг", )
+def wireguard_config_not_removed_flg(config_name: str):
+    cfg_folder = "/etc/wireguard/clients"
+    blk_file_path = "used.lock"
+    cfg_file = pathlib.Path(cfg_folder, config_name)
+    if not cfg_file.exists():
+        raise HTTPException(status_code=404, detail=f"Конфиг {config_name} не найден")
+    else:
+        blk_f = pathlib.Path(cfg_file, blk_file_path)
+        if blk_f.exists():
+            blk_f.unlink()
+        else:
+            blk_f.touch()
+    return "success"
+
+
+@app.delete("/wireguard_config_remove",
+            tags=["wireguard"],
+            description="удаляет пользователя по его Public Key.",
+            name="Удаление клиента", )
+def wireguard_config_remove(pub_key: str):
+    wg0_file = '/etc/wireguard/wg0.conf'
+    wg_iface = 'wg0'  # wireguard interface
+    status_list = status(logger, wg_iface, wg0_file)
+    srv_cfg_file = ServerConfig(wg0_file)
+    for row in status_list.clients:
+        if row.pub_key == pub_key:
+            remove_client(row, logger=logger, srv_cfg_file=srv_cfg_file)
+    return "success"
+
 
 @app.delete("/del_all_cfg",
             tags=["wireguard"],

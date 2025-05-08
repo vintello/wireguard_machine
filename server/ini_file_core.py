@@ -2,6 +2,7 @@ import pydantic
 import re
 import os
 import ipaddress
+import datetime
 from server.schemas import Client, ListClients
 from server.utils import get_file_source
 
@@ -220,7 +221,10 @@ def clients_scan(directory="/etc/wireguard/clients"):
             pass
         else:
             subdirname = row[0].split("/")[-1]
-            client = Client(name=subdirname)
+            created_dt = os.stat(row[0]).st_ctime
+            client = Client(name=subdirname,
+                            conf_created = datetime.datetime.fromtimestamp(created_dt),
+                            )
             files_list = [os.path.splitext(file_) for file_ in row[2]]
             for file_ in files_list:
                 if ".conf" in file_[1]:
