@@ -22,7 +22,7 @@ Wireguard Manager
       sudo add-apt-repository ppa:deadsnakes/ppa
       sudo apt update
       sudo apt install python3.10
-      sudo apt install python3.10-venv
+      
 
 проверяем что python установился корректно
 
@@ -39,6 +39,10 @@ Wireguard Manager
       sudo make altinstall
 
 !!!! если устанавливали версию python 3.10 то на шаге "создаем виртуальное окружение" python3 заменяем на python3.10 !!!!
+
+доустанавливаем пакет
+
+        sudo apt install python3.10-venv
 
 создаем пользователя
 
