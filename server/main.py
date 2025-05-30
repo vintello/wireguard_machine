@@ -306,7 +306,7 @@ def whitelist_upload_file(file: UploadFile):
     reader_obj = csv.reader(io.StringIO(tt), delimiter=",")
     with Session(engine) as session:
         for row in reader_obj:
-            print(row[0])
+            #print(row[0])
             new_data = dict()
             new_data["ip_addr"] = row[0]
             new_data["type_rec"] = Type_IP_List.whitelist
@@ -317,6 +317,8 @@ def whitelist_upload_file(file: UploadFile):
             fill_resp = IP_List_Response(**{"id": rec.id, "ip_addr": rec.ip_addr})
             result.append(fill_resp)
     resp = List_IP_List_Update_response(items=result)
+    for row in result:
+        config.whitelist.append(row.ip_addr)
     return resp
 
 
